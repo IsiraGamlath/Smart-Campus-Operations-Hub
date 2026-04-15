@@ -1,6 +1,9 @@
 package backend;
 
 import java.util.List;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import backend.entity.Resource;
+
 @RestController
 @RequestMapping("/api/resources")
 public class ResourceController {
@@ -19,22 +24,22 @@ public class ResourceController {
     private ResourceService resourceService;
 
     @GetMapping
-    public List<backend.entity.Resource> getAllResources() {
+    public List<Resource> getAllResources() {
         return resourceService.getAllResources();
     }
 
     @GetMapping("/{id}")
-    public backend.entity.Resource getResourceById(@PathVariable String id) {
+    public Resource getResourceById(@PathVariable String id) {
         return resourceService.getResourceById(id);
     }
 
     @PostMapping
-    public backend.entity.Resource addResource(@RequestBody backend.entity.Resource resource) {
+    public Resource addResource(@Valid @RequestBody Resource resource) {
         return resourceService.addResource(resource);
     }
 
     @PutMapping("/{id}")
-    public backend.entity.Resource updateResource(@PathVariable String id, @RequestBody backend.entity.Resource resource) {
+    public Resource updateResource(@PathVariable String id, @Valid @RequestBody Resource resource) {
         return resourceService.updateResource(id, resource);
     }
 
@@ -44,12 +49,37 @@ public class ResourceController {
     }
 
     @GetMapping("/type/{type}")
-    public List<backend.entity.Resource> getResourcesByType(@PathVariable String type) {
+    public List<Resource> getResourcesByType(@PathVariable String type) {
         return resourceService.getResourcesByType(type);
     }
 
     @GetMapping("/location/{location}")
-    public List<backend.entity.Resource> getResourcesByLocation(@PathVariable String location) {
+    public List<Resource> getResourcesByLocation(@PathVariable String location) {
         return resourceService.getResourcesByLocation(location);
+    }
+
+    @GetMapping("/status/{status}")
+    public List<Resource> getResourcesByStatus(@PathVariable String status) {
+        return resourceService.getResourcesByStatus(status);
+    }
+
+    @GetMapping("/capacity/{capacity}")
+    public List<Resource> getResourcesByMinimumCapacity(@PathVariable int capacity) {
+        return resourceService.getResourcesByMinimumCapacity(capacity);
+    }
+
+    @GetMapping("/search/name/{name}")
+    public List<Resource> searchResourcesByName(@PathVariable String name) {
+        return resourceService.searchResourcesByName(name);
+    }
+
+    @GetMapping("/search/type/{type}")
+    public List<Resource> searchResourcesByTypeIgnoreCase(@PathVariable String type) {
+        return resourceService.searchResourcesByTypeIgnoreCase(type);
+    }
+
+    @GetMapping("/search/location/{location}")
+    public List<Resource> searchResourcesByLocationIgnoreCase(@PathVariable String location) {
+        return resourceService.searchResourcesByLocationIgnoreCase(location);
     }
 }
