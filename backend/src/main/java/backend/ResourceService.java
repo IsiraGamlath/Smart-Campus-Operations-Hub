@@ -15,6 +15,14 @@ public class ResourceService {
         return resourceRepository.findAll();
     }
 
+    public List<Resource> getResourcesByType(String type) {
+        return resourceRepository.findByType(type);
+    }
+
+    public List<Resource> getResourcesByLocation(String location) {
+        return resourceRepository.findByLocation(location);
+    }
+
     public Resource getResourceById(Long id) {
         Optional<Resource> resource = resourceRepository.findById(id);
         return resource.orElse(null);
@@ -46,4 +54,3 @@ public class ResourceService {
         resourceRepository.deleteById(id);
     }
 }
-

@@ -42,5 +42,14 @@ public class ResourceController {
     public void deleteResource(@PathVariable Long id) {
         resourceService.deleteResource(id);
     }
-}
 
+    @GetMapping("/type/{type}")
+    public List<Resource> getResourcesByType(@PathVariable String type) {
+        return resourceService.getResourcesByType(type);
+    }
+
+    @GetMapping("/location/{location}")
+    public List<Resource> getResourcesByLocation(@PathVariable String location) {
+        return resourceService.getResourcesByLocation(location);
+    }
+}
