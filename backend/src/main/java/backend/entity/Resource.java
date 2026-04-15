@@ -17,23 +17,23 @@ public class Resource {
     @Id
     private String id;
 
-    @NotBlank
+    @NotBlank(message = "Resource name is required")
     private String name;
 
-    @NotBlank
+    @NotBlank(message = "Resource type is required")
     private String type;
 
-    @Min(1)
+    @Min(value = 1, message = "Capacity must be at least 1")
     private int capacity;
 
-    @NotBlank
+    @NotBlank(message = "Resource location is required")
     private String location;
 
     private String availabilityStart;
 
     private String availabilityEnd;
 
-    @NotBlank
+    @NotBlank(message = "Resource status is required")
     private String status;
 
     private String description;
