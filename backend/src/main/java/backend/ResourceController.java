@@ -19,37 +19,37 @@ public class ResourceController {
     private ResourceService resourceService;
 
     @GetMapping
-    public List<Resource> getAllResources() {
+    public List<backend.entity.Resource> getAllResources() {
         return resourceService.getAllResources();
     }
 
     @GetMapping("/{id}")
-    public Resource getResourceById(@PathVariable Long id) {
+    public backend.entity.Resource getResourceById(@PathVariable String id) {
         return resourceService.getResourceById(id);
     }
 
     @PostMapping
-    public Resource addResource(@RequestBody Resource resource) {
+    public backend.entity.Resource addResource(@RequestBody backend.entity.Resource resource) {
         return resourceService.addResource(resource);
     }
 
     @PutMapping("/{id}")
-    public Resource updateResource(@PathVariable Long id, @RequestBody Resource resource) {
+    public backend.entity.Resource updateResource(@PathVariable String id, @RequestBody backend.entity.Resource resource) {
         return resourceService.updateResource(id, resource);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteResource(@PathVariable Long id) {
+    public void deleteResource(@PathVariable String id) {
         resourceService.deleteResource(id);
     }
 
     @GetMapping("/type/{type}")
-    public List<Resource> getResourcesByType(@PathVariable String type) {
+    public List<backend.entity.Resource> getResourcesByType(@PathVariable String type) {
         return resourceService.getResourcesByType(type);
     }
 
     @GetMapping("/location/{location}")
-    public List<Resource> getResourcesByLocation(@PathVariable String location) {
+    public List<backend.entity.Resource> getResourcesByLocation(@PathVariable String location) {
         return resourceService.getResourcesByLocation(location);
     }
 }

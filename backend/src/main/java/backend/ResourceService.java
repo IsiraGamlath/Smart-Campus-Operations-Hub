@@ -11,46 +11,47 @@ public class ResourceService {
     @Autowired
     private ResourceRepository resourceRepository;
 
-    public List<Resource> getAllResources() {
+    public List<backend.entity.Resource> getAllResources() {
         return resourceRepository.findAll();
     }
 
-    public List<Resource> getResourcesByType(String type) {
+    public List<backend.entity.Resource> getResourcesByType(String type) {
         return resourceRepository.findByType(type);
     }
 
-    public List<Resource> getResourcesByLocation(String location) {
+    public List<backend.entity.Resource> getResourcesByLocation(String location) {
         return resourceRepository.findByLocation(location);
     }
 
-    public Resource getResourceById(Long id) {
-        Optional<Resource> resource = resourceRepository.findById(id);
+    public backend.entity.Resource getResourceById(String id) {
+        Optional<backend.entity.Resource> resource = resourceRepository.findById(id);
         return resource.orElse(null);
     }
 
-    public Resource addResource(Resource resource) {
+    public backend.entity.Resource addResource(backend.entity.Resource resource) {
         return resourceRepository.save(resource);
     }
 
-    public Resource updateResource(Long id, Resource resource) {
-        Optional<Resource> existing = resourceRepository.findById(id);
+    public backend.entity.Resource updateResource(String id, backend.entity.Resource resource) {
+        Optional<backend.entity.Resource> existing = resourceRepository.findById(id);
         if (existing.isEmpty()) {
             return null;
         }
 
-        Resource updated = existing.get();
+        backend.entity.Resource updated = existing.get();
         updated.setName(resource.getName());
         updated.setType(resource.getType());
         updated.setCapacity(resource.getCapacity());
         updated.setLocation(resource.getLocation());
-        updated.setAvailabilityWindow(resource.getAvailabilityWindow());
+        updated.setAvailabilityStart(resource.getAvailabilityStart());
+        updated.setAvailabilityEnd(resource.getAvailabilityEnd());
         updated.setStatus(resource.getStatus());
         updated.setDescription(resource.getDescription());
 
         return resourceRepository.save(updated);
     }
 
-    public void deleteResource(Long id) {
+    public void deleteResource(String id) {
         resourceRepository.deleteById(id);
     }
 }
