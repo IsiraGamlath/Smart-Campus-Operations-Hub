@@ -29,6 +29,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<Booking> getMyBookings(String userId) {
+        return bookingRepository.findByUserId(userId);
+    }
+
+    @Override
     public Booking createBooking(BookingRequest request) {
         validateTimeRange(request);
 
@@ -103,6 +108,19 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(request.getReason());
+        booking.setUpdatedAt(LocalDateTime.now());
+        return bookingRepository.save(booking);
+    }
+
+    @Override
+    public Booking cancelBooking(String id) {
+        Booking booking = getBookingById(id);
+
+        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.APPROVED) {
+            throw new BadRequestException("Only pending or approved bookings can be cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
         booking.setUpdatedAt(LocalDateTime.now());
         return bookingRepository.save(booking);
     }

@@ -9,11 +9,15 @@ public interface BookingService {
 
 	List<Booking> getAllBookings();
 
+	List<Booking> getMyBookings(String userId);
+
 	Booking createBooking(BookingRequest request);
 
 	Booking approveBooking(String id);
 
 	Booking rejectBooking(String id, RejectRequest request);
+
+	Booking cancelBooking(String id);
 
 	Booking getBookingById(String id);
 
