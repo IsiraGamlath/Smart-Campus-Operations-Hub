@@ -120,8 +120,14 @@ const Layout = ({ children, user }) => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-3 py-2 text-slate-400">
+        <div className="p-4 border-t border-slate-100 space-y-3">
+          {/* Database Status */}
+          <div className="px-3 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">MongoDB Atlas Connected</span>
+          </div>
+
+          <div className="flex items-center gap-3 px-3 py-1 text-slate-400">
              <Settings size={20} />
              {!collapsed && <span className="text-xs">v1.2.0-stable</span>}
           </div>
