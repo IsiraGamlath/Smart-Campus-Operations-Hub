@@ -6,12 +6,51 @@ const throwIfNotOk = (response, message) => {
   }
 };
 
-export const fetchResourcesApi = async () => {
-  const response = await fetch(API_BASE_URL);
-  throwIfNotOk(response, 'Failed to fetch resources');
+const fetchResourceList = async (url, errorMessage) => {
+  const response = await fetch(url);
+  throwIfNotOk(response, errorMessage);
 
   const data = await response.json();
   return Array.isArray(data) ? data : [];
+};
+
+export const fetchResourcesApi = async () => {
+  return fetchResourceList(API_BASE_URL, 'Failed to fetch resources');
+};
+
+export const fetchResourcesByNameApi = async (name) => {
+  return fetchResourceList(
+    API_BASE_URL + '/search/name/' + encodeURIComponent(name),
+    'Failed to search resources by name',
+  );
+};
+
+export const fetchResourcesByTypeApi = async (type) => {
+  return fetchResourceList(
+    API_BASE_URL + '/search/type/' + encodeURIComponent(type),
+    'Failed to filter resources by type',
+  );
+};
+
+export const fetchResourcesByLocationApi = async (location) => {
+  return fetchResourceList(
+    API_BASE_URL + '/search/location/' + encodeURIComponent(location),
+    'Failed to filter resources by location',
+  );
+};
+
+export const fetchResourcesByStatusApi = async (status) => {
+  return fetchResourceList(
+    API_BASE_URL + '/status/' + encodeURIComponent(status),
+    'Failed to filter resources by status',
+  );
+};
+
+export const fetchResourcesByMinimumCapacityApi = async (capacity) => {
+  return fetchResourceList(
+    API_BASE_URL + '/capacity/' + encodeURIComponent(capacity),
+    'Failed to filter resources by minimum capacity',
+  );
 };
 
 export const createResourceApi = async (payload) => {

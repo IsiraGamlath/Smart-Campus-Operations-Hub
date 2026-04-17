@@ -3,6 +3,11 @@ import {
   createResourceApi,
   deleteResourceApi,
   fetchResourcesApi,
+  fetchResourcesByLocationApi,
+  fetchResourcesByMinimumCapacityApi,
+  fetchResourcesByNameApi,
+  fetchResourcesByStatusApi,
+  fetchResourcesByTypeApi,
   updateResourceApi,
 } from './resourceService';
 
@@ -17,6 +22,14 @@ const initialFormData = {
   description: '',
 };
 
+const initialFilterData = {
+  name: '',
+  type: '',
+  location: '',
+  status: '',
+  minCapacity: '',
+};
+
 function App() {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,10 +41,46 @@ function App() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deletingResourceId, setDeletingResourceId] = useState('');
+  const [filterData, setFilterData] = useState(initialFilterData);
+  const [filtering, setFiltering] = useState(false);
 
   const isEditMode = Boolean(editingResourceId);
 
   const getResourceId = (resource) => resource?.id || resource?._id || '';
+
+  const getResourceKey = (resource) => {
+    const resourceId = getResourceId(resource);
+
+    if (resourceId) {
+      return 'id:' + resourceId;
+    }
+
+    return [
+      resource?.name || '',
+      resource?.type || '',
+      resource?.location || '',
+      resource?.capacity ?? '',
+      resource?.availabilityStart || '',
+      resource?.availabilityEnd || '',
+      resource?.status || '',
+      resource?.description || '',
+    ].join('|').toLowerCase();
+  };
+
+  const intersectResourceGroups = (resourceGroups) => {
+    if (resourceGroups.length === 0) {
+      return [];
+    }
+
+    let intersection = resourceGroups[0];
+
+    for (let index = 1; index < resourceGroups.length; index += 1) {
+      const groupKeys = new Set(resourceGroups[index].map((resource) => getResourceKey(resource)));
+      intersection = intersection.filter((resource) => groupKeys.has(getResourceKey(resource)));
+    }
+
+    return intersection;
+  };
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -67,6 +116,77 @@ function App() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleFilterInputChange = (event) => {
+    const { name, value } = event.target;
+    setFilterData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    setError('');
+
+    const name = filterData.name.trim();
+    const type = filterData.type.trim();
+    const location = filterData.location.trim();
+    const status = filterData.status.trim();
+    const minCapacityValue = filterData.minCapacity.trim();
+
+    if (minCapacityValue !== '' && (!Number.isInteger(Number(minCapacityValue)) || Number(minCapacityValue) < 0)) {
+      setError('Minimum capacity must be a whole number greater than or equal to 0.');
+      return;
+    }
+
+    const hasAnyFilter = name || type || location || status || minCapacityValue !== '';
+
+    if (!hasAnyFilter) {
+      await fetchResources();
+      return;
+    }
+
+    setLoading(true);
+    setFiltering(true);
+
+    try {
+      const resourceGroups = [];
+
+      if (name) {
+        resourceGroups.push(await fetchResourcesByNameApi(name));
+      }
+
+      if (type) {
+        resourceGroups.push(await fetchResourcesByTypeApi(type));
+      }
+
+      if (location) {
+        resourceGroups.push(await fetchResourcesByLocationApi(location));
+      }
+
+      if (status) {
+        resourceGroups.push(await fetchResourcesByStatusApi(status));
+      }
+
+      if (minCapacityValue !== '') {
+        resourceGroups.push(await fetchResourcesByMinimumCapacityApi(Number(minCapacityValue)));
+      }
+
+      setResources(intersectResourceGroups(resourceGroups));
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred while filtering resources.');
+    } finally {
+      setLoading(false);
+      setFiltering(false);
+    }
+  };
+
+  const handleResetFilters = async () => {
+    setFilterData(initialFilterData);
+    setError('');
+    await fetchResources();
   };
 
   const handleEdit = (resource) => {
@@ -308,6 +428,103 @@ function App() {
                 {submitError && (
                   <p className="text-sm font-medium text-red-700">{submitError}</p>
                 )}
+              </div>
+            </form>
+          </section>
+
+          <section className="mt-6 border border-slate-200 rounded-lg bg-slate-50 p-4 sm:p-5">
+            <h2 className="text-lg font-semibold text-slate-900">Search &amp; Filter Resources</h2>
+
+            <form className="mt-4" onSubmit={handleSearch}>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filterName" className="text-sm font-medium text-slate-700">Search by Name</label>
+                  <input
+                    id="filterName"
+                    name="name"
+                    type="text"
+                    value={filterData.name}
+                    onChange={handleFilterInputChange}
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    placeholder="e.g., Computer Lab"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filterType" className="text-sm font-medium text-slate-700">Filter by Type</label>
+                  <input
+                    id="filterType"
+                    name="type"
+                    type="text"
+                    value={filterData.type}
+                    onChange={handleFilterInputChange}
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    placeholder="e.g., Lab"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filterLocation" className="text-sm font-medium text-slate-700">Filter by Location</label>
+                  <input
+                    id="filterLocation"
+                    name="location"
+                    type="text"
+                    value={filterData.location}
+                    onChange={handleFilterInputChange}
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    placeholder="e.g., Block A"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filterStatus" className="text-sm font-medium text-slate-700">Filter by Status</label>
+                  <input
+                    id="filterStatus"
+                    name="status"
+                    type="text"
+                    value={filterData.status}
+                    onChange={handleFilterInputChange}
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    placeholder="e.g., Available"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="filterMinCapacity" className="text-sm font-medium text-slate-700">Minimum Capacity</label>
+                  <input
+                    id="filterMinCapacity"
+                    name="minCapacity"
+                    type="number"
+                    min="0"
+                    value={filterData.minCapacity}
+                    onChange={handleFilterInputChange}
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    placeholder="e.g., 40"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
+                <button
+                  type="submit"
+                  className={
+                    filtering
+                      ? 'inline-flex items-center rounded-md bg-slate-400 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed'
+                      : 'inline-flex items-center rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-300'
+                  }
+                  disabled={filtering}
+                >
+                  {filtering ? 'Searching...' : 'Search'}
+                </button>
+
+                <button
+                  type="button"
+                  className="inline-flex items-center rounded-md bg-slate-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  onClick={handleResetFilters}
+                  disabled={filtering}
+                >
+                  Reset
+                </button>
               </div>
             </form>
           </section>
