@@ -2,10 +2,15 @@ package backend.service;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.io.File;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import backend.exception.TicketNotFoundException;
+import backend.model.Comment;
 import backend.model.Ticket;
 import backend.model.TicketStatus;
 import backend.repository.TicketRepository;
@@ -19,6 +24,8 @@ public class TicketService {
     //  CREATE
     public Ticket createTicket(Ticket ticket) {
         ticket.setStatus(TicketStatus.OPEN);
+        ticket.setCreatedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
         return ticketRepository.save(ticket);
     }
 
@@ -29,32 +36,81 @@ public class TicketService {
 
     //  GET BY ID
     public Ticket getTicketById(String id) {
-        return ticketRepository.findById(id).orElseThrow();
+        return ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
     }
 
     //  UPDATE
     public Ticket updateTicket(String id, Ticket updatedTicket) {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow();
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
 
-        ticket.setTitle(updatedTicket.getTitle());
+        ticket.setLocation(updatedTicket.getLocation());
+        ticket.setCategory(updatedTicket.getCategory());
         ticket.setDescription(updatedTicket.getDescription());
         ticket.setStatus(updatedTicket.getStatus());
         ticket.setPriority(updatedTicket.getPriority());
+        ticket.setAssignedTo(updatedTicket.getAssignedTo());
+        ticket.setResolutionNotes(updatedTicket.getResolutionNotes());
 
-        //  DO NOT overwrite comments/images
+        ticket.setUpdatedAt(LocalDateTime.now());
+
         return ticketRepository.save(ticket);
     }
 
-    //  ADD COMMENT (NEW)
-    public Ticket addComment(String id, String comment) {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow();
+    //  ADD COMMENT
+    public Ticket addComment(String id, String commentText) {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
 
         if (ticket.getComments() == null) {
             ticket.setComments(new ArrayList<>());
         }
 
+        Comment comment = new Comment(id, "Admin", commentText, LocalDateTime.now());
         ticket.getComments().add(comment);
+        ticket.setUpdatedAt(LocalDateTime.now());
 
+        return ticketRepository.save(ticket);
+    }
+
+    //  IMAGE UPLOAD (NEW)
+    public Ticket uploadImages(String id, MultipartFile[] files) throws Exception {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+
+        if (ticket.getImages() == null) {
+            ticket.setImages(new ArrayList<>());
+        }
+
+        for (MultipartFile file : files) {
+
+            //  limit to 3 images
+            if (ticket.getImages().size() >= 3) break;
+
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+
+            String uploadDir = "uploads/";
+            File uploadPath = new File(uploadDir);
+
+            if (!uploadPath.exists()) {
+                uploadPath.mkdirs();
+            }
+
+            file.transferTo(new File(uploadDir + fileName));
+
+            // save URL
+            ticket.getImages().add("http://localhost:8081/uploads/" + fileName);
+        }
+
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return ticketRepository.save(ticket);
+    }
+
+    public Ticket deleteImage(String id, String imageUrl) {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+
+        if (ticket.getImages() != null) {
+            ticket.getImages().removeIf(url -> url.equals(imageUrl));
+        }
+
+        ticket.setUpdatedAt(LocalDateTime.now());
         return ticketRepository.save(ticket);
     }
 

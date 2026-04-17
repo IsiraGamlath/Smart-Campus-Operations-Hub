@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createTicket,
   deleteTicket,
@@ -15,7 +15,7 @@ function TicketPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -23,15 +23,16 @@ function TicketPage() {
       const response = await getTickets();
       setTickets(response.data || []);
     } catch {
+      setTickets([]);
       setError("Unable to load tickets. Please refresh the page.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTickets();
-  }, []);
+  }, [loadTickets]);
 
   const showMessage = (text) => {
     setMessage(text);
@@ -100,6 +101,31 @@ function TicketPage() {
     });
   }, [tickets]);
 
+  let ticketListSection = null;
+
+  if (loading) {
+    ticketListSection = (
+      <section className="ticket-list-section">
+        <div className="loading-state">Loading tickets...</div>
+      </section>
+    );
+  } else if (error) {
+    ticketListSection = (
+      <section className="ticket-list-section">
+        <div className="empty-state">{error}</div>
+      </section>
+    );
+  } else {
+    ticketListSection = (
+      <TicketList
+        tickets={sortedTickets}
+        onStatusTransition={handleStatusTransition}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+      />
+    );
+  }
+
   return (
     <main className="page-container">
       <div className="page-header">
@@ -122,18 +148,7 @@ function TicketPage() {
           onCancel={() => setSelectedTicket(null)}
         />
 
-        {loading ? (
-          <section className="ticket-list-section">
-            <div className="loading-state">Loading tickets...</div>
-          </section>
-        ) : (
-          <TicketList
-            tickets={sortedTickets}
-            onStatusTransition={handleStatusTransition}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
-        )}
+        {ticketListSection}
       </div>
     </main>
   );

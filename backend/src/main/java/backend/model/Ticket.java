@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "tickets")
@@ -12,49 +14,54 @@ public class Ticket {
     @Id
     private String id;
 
-    @NotBlank(message = "Title is required")
-    private String title;
+    @NotBlank(message = "Location is required")
+    private String location;
+
+    @NotBlank(message = "Category is required")
+    private String category;
 
     @NotBlank(message = "Description is required")
     private String description;
 
-    // ENUM (keep this)
     private TicketStatus status = TicketStatus.OPEN;
 
     @NotBlank(message = "Priority is required")
     private String priority;
 
-    //  NEW: COMMENTS
-    private List<String> comments;
+    private List<String> images = new ArrayList<>();
 
-    // NEW: IMAGES
-    private List<String> images;
+    private String createdBy;
 
-    //  DEFAULT CONSTRUCTOR
+    private String assignedTo;
+
+    private String resolutionNotes;
+    private List<Comment> comments = new ArrayList<>();
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
     public Ticket() {
         this.status = TicketStatus.OPEN;
     }
-
-    //  CONSTRUCTOR
-    public Ticket(String title, String description, TicketStatus status, String priority) {
-        this.title = title;
-        this.description = description;
-        this.status = status == null ? TicketStatus.OPEN : status;
-        this.priority = priority;
-    }
-
-    //  GETTERS & SETTERS
 
     public String getId() {
         return id;
     }
 
-    public String getTitle() {
-        return title;
+    public String getLocation() {
+        return location;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getDescription() {
@@ -81,21 +88,59 @@ public class Ticket {
         this.priority = priority;
     }
 
-    //  COMMENTS GET/SET
-    public List<String> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<String> comments) {
-        this.comments = comments;
-    }
-
-    //  IMAGES GET/SET
     public List<String> getImages() {
         return images;
     }
 
     public void setImages(List<String> images) {
         this.images = images;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+    }
+
+    public String getResolutionNotes() {
+        return resolutionNotes;
+    }
+
+    public void setResolutionNotes(String resolutionNotes) {
+        this.resolutionNotes = resolutionNotes;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
