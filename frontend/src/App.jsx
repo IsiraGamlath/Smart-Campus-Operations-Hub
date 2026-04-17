@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import ResourceForm from './ResourceForm.jsx';
+import ResourceTable from './ResourceTable.jsx';
 import {
   createResourceApi,
   deleteResourceApi,
@@ -30,6 +32,52 @@ const initialFilterData = {
   minCapacity: '',
 };
 
+const typeOptions = [
+  'Lecture Hall',
+  'Lab',
+  'Library',
+  'Conference Room',
+  'Study Area',
+];
+
+const locationOptions = [
+  'Main Building',
+  'New Building',
+  'Business Management Building',
+  'Engineering Building',
+];
+
+const availabilityStartOptions = [
+  '08:30',
+  '09:30',
+  '10:30',
+  '11:30',
+  '12:30',
+  '13:30',
+  '14:30',
+  '15:30',
+  '16:30',
+];
+
+const availabilityEndOptions = [
+  '12:30',
+  '13:30',
+  '14:30',
+  '15:30',
+  '16:30',
+  '17:30',
+];
+
+const statusOptions = [
+  'Available',
+  'Reserved',
+  'Under Maintenance',
+  'Unavailable',
+  'Closed',
+];
+
+const nonBookableStatuses = new Set(['reserved', 'under maintenance', 'unavailable', 'closed']);
+
 const parseTimeToMinutes = (timeValue) => {
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeValue);
 
@@ -47,19 +95,42 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [formErrors, setFormErrors] = useState({});
-  const [editingResourceId, setEditingResourceId] = useState(null);
+  const [addFormData, setAddFormData] = useState(initialFormData);
+  const [addFormErrors, setAddFormErrors] = useState({});
+  const [addTouchedFields, setAddTouchedFields] = useState({});
+  const [addHasSubmitted, setAddHasSubmitted] = useState(false);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingResourceId, setEditingResourceId] = useState('');
+  const [editFormData, setEditFormData] = useState(initialFormData);
+  const [editFormErrors, setEditFormErrors] = useState({});
+  const [editTouchedFields, setEditTouchedFields] = useState({});
+  const [editHasSubmitted, setEditHasSubmitted] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  const [pendingDeleteResource, setPendingDeleteResource] = useState(null);
+  const [deletingResourceId, setDeletingResourceId] = useState('');
+
   const [submitMessage, setSubmitMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingResourceId, setDeletingResourceId] = useState('');
+
   const [filterData, setFilterData] = useState(initialFilterData);
   const [filtering, setFiltering] = useState(false);
 
-  const isEditMode = Boolean(editingResourceId);
-
   const getResourceId = (resource) => resource?.id || resource?._id || '';
+
+  const normalizeStatus = (status) => (status || '').trim().toLowerCase();
+
+  const isBookable = (status) => {
+    const normalizedStatus = normalizeStatus(status);
+
+    if (!normalizedStatus) {
+      return false;
+    }
+
+    return !nonBookableStatuses.has(normalizedStatus);
+  };
 
   const getResourceKey = (resource) => {
     const resourceId = getResourceId(resource);
@@ -135,14 +206,14 @@ function App() {
         const endValue = trimmedValue;
 
         if (!endValue) {
-          return 'Availability end time must be later than availability start';
+          return 'Availability end time must be later than availability start time';
         }
 
         const startMinutes = parseTimeToMinutes(startValue);
         const endMinutes = parseTimeToMinutes(endValue);
 
         if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
-          return 'Availability end time must be later than availability start';
+          return 'Availability end time must be later than availability start time';
         }
 
         return '';
@@ -179,23 +250,116 @@ function App() {
     return nextErrors;
   };
 
-  const getInputClass = (fieldName) => {
-    const baseClasses = 'w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2';
-    const invalidClasses = 'border-red-500 focus:border-red-500 focus:ring-red-200';
-    const validClasses = 'border-slate-300 focus:border-sky-500 focus:ring-sky-200';
+  const getNextErrorsOnChange = (
+    prevErrors,
+    fieldName,
+    fieldValue,
+    nextData,
+    touchedFields,
+    hasSubmitted,
+  ) => {
+    const nextErrors = { ...prevErrors };
+    const shouldValidateCurrentField = hasSubmitted || touchedFields[fieldName];
 
-    return baseClasses + ' ' + (formErrors[fieldName] ? invalidClasses : validClasses);
+    if (shouldValidateCurrentField) {
+      const currentFieldError = validateField(fieldName, fieldValue, nextData);
+
+      if (currentFieldError) {
+        nextErrors[fieldName] = currentFieldError;
+      } else {
+        delete nextErrors[fieldName];
+      }
+    }
+
+    if (fieldName === 'availabilityStart' || fieldName === 'availabilityEnd') {
+      const shouldValidateStart = hasSubmitted || touchedFields.availabilityStart;
+      const shouldValidateEnd = hasSubmitted || touchedFields.availabilityEnd;
+
+      if (shouldValidateStart) {
+        const startFieldError = validateField('availabilityStart', nextData.availabilityStart, nextData);
+
+        if (startFieldError) {
+          nextErrors.availabilityStart = startFieldError;
+        } else {
+          delete nextErrors.availabilityStart;
+        }
+      }
+
+      if (shouldValidateEnd) {
+        const endFieldError = validateField('availabilityEnd', nextData.availabilityEnd, nextData);
+
+        if (endFieldError) {
+          nextErrors.availabilityEnd = endFieldError;
+        } else {
+          delete nextErrors.availabilityEnd;
+        }
+      }
+    }
+
+    return nextErrors;
   };
 
-  const getTextareaClass = (fieldName) => {
-    return getInputClass(fieldName) + ' min-h-[96px] resize-y';
+  const getNextErrorsOnBlur = (
+    prevErrors,
+    fieldName,
+    formData,
+    touchedFields,
+    hasSubmitted,
+  ) => {
+    const nextErrors = { ...prevErrors };
+    const currentFieldError = validateField(fieldName, formData[fieldName], formData);
+
+    if (currentFieldError) {
+      nextErrors[fieldName] = currentFieldError;
+    } else {
+      delete nextErrors[fieldName];
+    }
+
+    if (fieldName === 'availabilityStart' && (touchedFields.availabilityEnd || hasSubmitted)) {
+      const endFieldError = validateField('availabilityEnd', formData.availabilityEnd, formData);
+
+      if (endFieldError) {
+        nextErrors.availabilityEnd = endFieldError;
+      } else {
+        delete nextErrors.availabilityEnd;
+      }
+    }
+
+    return nextErrors;
   };
 
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setFormErrors({});
-    setEditingResourceId(null);
+  const resetAddForm = () => {
+    setAddFormData(initialFormData);
+    setAddFormErrors({});
+    setAddTouchedFields({});
+    setAddHasSubmitted(false);
   };
+
+  const resetEditForm = () => {
+    setEditFormData(initialFormData);
+    setEditFormErrors({});
+    setEditTouchedFields({});
+    setEditHasSubmitted(false);
+    setEditingResourceId('');
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    resetEditForm();
+    setSubmitError('');
+  };
+
+  useEffect(() => {
+    if (!submitMessage) {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setSubmitMessage('');
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [submitMessage]);
 
   const fetchResources = async (showLoading = true) => {
     if (showLoading) {
@@ -220,37 +384,225 @@ function App() {
     fetchResources();
   }, []);
 
-  const handleInputChange = (event) => {
+  const handleAddInputChange = (event) => {
     const { name, value } = event.target;
     const nextData = {
-      ...formData,
+      ...addFormData,
       [name]: value,
     };
 
-    setFormData(nextData);
+    setAddFormData(nextData);
 
-    setFormErrors((prevErrors) => {
-      const nextErrors = { ...prevErrors };
-      const currentFieldError = validateField(name, value, nextData);
+    setAddFormErrors((prevErrors) => getNextErrorsOnChange(
+      prevErrors,
+      name,
+      value,
+      nextData,
+      addTouchedFields,
+      addHasSubmitted,
+    ));
+  };
 
-      if (currentFieldError) {
-        nextErrors[name] = currentFieldError;
-      } else {
-        delete nextErrors[name];
-      }
+  const handleAddFieldBlur = (event) => {
+    const { name } = event.target;
+    const nextTouchedFields = {
+      ...addTouchedFields,
+      [name]: true,
+    };
 
-      if (name === 'availabilityStart') {
-        const endFieldError = validateField('availabilityEnd', nextData.availabilityEnd, nextData);
+    setAddTouchedFields(nextTouchedFields);
 
-        if (endFieldError) {
-          nextErrors.availabilityEnd = endFieldError;
-        } else {
-          delete nextErrors.availabilityEnd;
-        }
-      }
+    setAddFormErrors((prevErrors) => getNextErrorsOnBlur(
+      prevErrors,
+      name,
+      addFormData,
+      nextTouchedFields,
+      addHasSubmitted,
+    ));
+  };
 
-      return nextErrors;
+  const handleAddSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitMessage('');
+    setSubmitError('');
+    setAddHasSubmitted(true);
+
+    const validationErrors = validateForm(addFormData);
+    setAddFormErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setAddSubmitting(true);
+
+    const payload = {
+      ...addFormData,
+      capacity: Number(addFormData.capacity),
+    };
+
+    try {
+      await createResourceApi(payload);
+      resetAddForm();
+      await fetchResources(false);
+      setSubmitMessage('Resource created successfully.');
+    } catch (err) {
+      setSubmitError(err.message || 'An unexpected error occurred while adding the resource.');
+    } finally {
+      setAddSubmitting(false);
+    }
+  };
+
+  const openEditModal = (resource) => {
+    const resourceId = getResourceId(resource);
+
+    if (!resourceId) {
+      setSubmitMessage('');
+      setSubmitError('Cannot edit this resource because no id was found.');
+      return;
+    }
+
+    setEditingResourceId(resourceId);
+    setEditFormData({
+      name: resource.name || '',
+      type: resource.type || '',
+      capacity: resource.capacity ?? '',
+      location: resource.location || '',
+      availabilityStart: resource.availabilityStart || '',
+      availabilityEnd: resource.availabilityEnd || '',
+      status: resource.status || '',
+      description: resource.description || '',
     });
+    setEditFormErrors({});
+    setEditTouchedFields({});
+    setEditHasSubmitted(false);
+    setSubmitMessage('');
+    setSubmitError('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditInputChange = (event) => {
+    const { name, value } = event.target;
+    const nextData = {
+      ...editFormData,
+      [name]: value,
+    };
+
+    setEditFormData(nextData);
+
+    setEditFormErrors((prevErrors) => getNextErrorsOnChange(
+      prevErrors,
+      name,
+      value,
+      nextData,
+      editTouchedFields,
+      editHasSubmitted,
+    ));
+  };
+
+  const handleEditFieldBlur = (event) => {
+    const { name } = event.target;
+    const nextTouchedFields = {
+      ...editTouchedFields,
+      [name]: true,
+    };
+
+    setEditTouchedFields(nextTouchedFields);
+
+    setEditFormErrors((prevErrors) => getNextErrorsOnBlur(
+      prevErrors,
+      name,
+      editFormData,
+      nextTouchedFields,
+      editHasSubmitted,
+    ));
+  };
+
+  const handleUpdateSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitMessage('');
+    setSubmitError('');
+    setEditHasSubmitted(true);
+
+    const validationErrors = validateForm(editFormData);
+    setEditFormErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    if (!editingResourceId) {
+      setSubmitError('Cannot update this resource because no id was found.');
+      return;
+    }
+
+    setEditSubmitting(true);
+
+    const payload = {
+      ...editFormData,
+      capacity: Number(editFormData.capacity),
+    };
+
+    try {
+      await updateResourceApi(editingResourceId, payload);
+      setIsEditModalOpen(false);
+      resetEditForm();
+      await fetchResources(false);
+      setSubmitMessage('Resource updated successfully.');
+    } catch (err) {
+      setSubmitError(err.message || 'An unexpected error occurred while updating the resource.');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const openDeleteModal = (resource) => {
+    setPendingDeleteResource(resource);
+  };
+
+  const closeDeleteModal = () => {
+    setPendingDeleteResource(null);
+  };
+
+  const confirmDeleteResource = async () => {
+    const resourceId = getResourceId(pendingDeleteResource);
+
+    if (!resourceId) {
+      setSubmitMessage('');
+      setSubmitError('Cannot delete this resource because no id was found.');
+      setPendingDeleteResource(null);
+      return;
+    }
+
+    setSubmitMessage('');
+    setSubmitError('');
+    setDeletingResourceId(resourceId);
+
+    try {
+      await deleteResourceApi(resourceId);
+
+      if (isEditModalOpen && editingResourceId === resourceId) {
+        closeEditModal();
+      }
+
+      setPendingDeleteResource(null);
+      await fetchResources(false);
+      setSubmitMessage('Resource deleted successfully.');
+    } catch (err) {
+      setSubmitError(err.message || 'An unexpected error occurred while deleting the resource.');
+    } finally {
+      setDeletingResourceId('');
+    }
+  };
+
+  const handleBookResource = (resource) => {
+    if (!isBookable(resource.status)) {
+      return;
+    }
+
+    const resourceName = (resource.name || 'Selected resource').trim();
+    setSubmitError('');
+    setSubmitMessage(resourceName + ' is available for booking.');
   };
 
   const handleFilterInputChange = (event) => {
@@ -324,464 +676,232 @@ function App() {
     await fetchResources();
   };
 
-  const handleEdit = (resource) => {
-    const resourceId = getResourceId(resource);
-
-    if (!resourceId) {
-      setSubmitMessage('');
-      setSubmitError('Cannot edit this resource because no id was found.');
-      return;
-    }
-
-    setFormData({
-      name: resource.name || '',
-      type: resource.type || '',
-      capacity: resource.capacity ?? '',
-      location: resource.location || '',
-      availabilityStart: resource.availabilityStart || '',
-      availabilityEnd: resource.availabilityEnd || '',
-      status: resource.status || '',
-      description: resource.description || '',
-    });
-
-    setEditingResourceId(resourceId);
-    setFormErrors({});
-    setSubmitMessage('');
-    setSubmitError('');
-  };
-
-  const handleDelete = async (resourceId) => {
-    if (!resourceId) {
-      setSubmitMessage('');
-      setSubmitError('Cannot delete this resource because no id was found.');
-      return;
-    }
-
-    const confirmed = window.confirm('Are you sure you want to delete this resource?');
-    if (!confirmed) {
-      return;
-    }
-
-    setSubmitMessage('');
-    setSubmitError('');
-    setDeletingResourceId(resourceId);
-
-    try {
-      await deleteResourceApi(resourceId);
-
-      if (editingResourceId === resourceId) {
-        resetForm();
-      }
-
-      await fetchResources(false);
-      setSubmitMessage('Resource deleted successfully.');
-    } catch (err) {
-      setSubmitError(err.message || 'An unexpected error occurred while deleting the resource.');
-    } finally {
-      setDeletingResourceId('');
-    }
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitMessage('');
-    setSubmitError('');
-
-    const validationErrors = validateForm(formData);
-    setFormErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
-
-    setSubmitting(true);
-
-    if (isEditMode && !editingResourceId) {
-      setSubmitError('Cannot update this resource because no id was found.');
-      setSubmitting(false);
-      return;
-    }
-
-    const payload = {
-      ...formData,
-      capacity: Number(formData.capacity),
-    };
-
-    try {
-      if (isEditMode) {
-        await updateResourceApi(editingResourceId, payload);
-      } else {
-        await createResourceApi(payload);
-      }
-
-      resetForm();
-      await fetchResources(false);
-      setSubmitMessage(isEditMode ? 'Resource updated successfully.' : 'Resource created successfully.');
-    } catch (err) {
-      setSubmitError(
-        err.message
-          || 'An unexpected error occurred while ' + (isEditMode ? 'updating' : 'adding') + ' the resource.',
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const actionBusy = addSubmitting || editSubmitting || filtering;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6">
-      <div className="container mx-auto max-w-6xl">
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6 sm:p-8">
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">
+    <div className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
             Facilities &amp; Assets Catalogue
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600">
+          <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Module A - Facilities &amp; Assets Catalogue: View and monitor campus resources such as
             rooms, labs, and shared spaces.
           </p>
-
-          <section className="mt-6 border border-slate-200 rounded-lg bg-slate-50 p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-slate-900">
-              {isEditMode ? 'Edit Resource' : 'Add New Resource'}
-            </h2>
-
-            <form className="mt-4" onSubmit={handleSubmit} noValidate>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="name" className="text-sm font-medium text-slate-700">Name</label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className={getInputClass('name')}
-                    aria-invalid={Boolean(formErrors.name)}
-                  />
-                  {formErrors.name && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="type" className="text-sm font-medium text-slate-700">Type</label>
-                  <input
-                    id="type"
-                    name="type"
-                    type="text"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    className={getInputClass('type')}
-                    aria-invalid={Boolean(formErrors.type)}
-                  />
-                  {formErrors.type && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.type}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="capacity" className="text-sm font-medium text-slate-700">Capacity</label>
-                  <input
-                    id="capacity"
-                    name="capacity"
-                    type="number"
-                    min="2"
-                    value={formData.capacity}
-                    onChange={handleInputChange}
-                    className={getInputClass('capacity')}
-                    aria-invalid={Boolean(formErrors.capacity)}
-                  />
-                  {formErrors.capacity && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.capacity}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="location" className="text-sm font-medium text-slate-700">Location</label>
-                  <input
-                    id="location"
-                    name="location"
-                    type="text"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className={getInputClass('location')}
-                    aria-invalid={Boolean(formErrors.location)}
-                  />
-                  {formErrors.location && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.location}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="availabilityStart" className="text-sm font-medium text-slate-700">Availability Start</label>
-                  <input
-                    id="availabilityStart"
-                    name="availabilityStart"
-                    type="text"
-                    value={formData.availabilityStart}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 08:00"
-                    className={getInputClass('availabilityStart')}
-                    aria-invalid={Boolean(formErrors.availabilityStart)}
-                  />
-                  {formErrors.availabilityStart && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.availabilityStart}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="availabilityEnd" className="text-sm font-medium text-slate-700">Availability End</label>
-                  <input
-                    id="availabilityEnd"
-                    name="availabilityEnd"
-                    type="text"
-                    value={formData.availabilityEnd}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 17:00"
-                    className={getInputClass('availabilityEnd')}
-                    aria-invalid={Boolean(formErrors.availabilityEnd)}
-                  />
-                  {formErrors.availabilityEnd && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.availabilityEnd}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="status" className="text-sm font-medium text-slate-700">Status</label>
-                  <input
-                    id="status"
-                    name="status"
-                    type="text"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className={getInputClass('status')}
-                    aria-invalid={Boolean(formErrors.status)}
-                  />
-                  {formErrors.status && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.status}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1 md:col-span-2 xl:col-span-3">
-                  <label htmlFor="description" className="text-sm font-medium text-slate-700">Description</label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className={getTextareaClass('description')}
-                    aria-invalid={Boolean(formErrors.description)}
-                  />
-                  {formErrors.description && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.description}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <button
-                  type="submit"
-                  className={
-                    submitting
-                      ? 'inline-flex items-center rounded-md bg-slate-400 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed'
-                      : 'inline-flex items-center rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-300'
-                  }
-                  disabled={submitting}
-                >
-                  {submitting ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Resource' : 'Add Resource')}
-                </button>
-
-                {submitMessage && (
-                  <p className="text-sm font-medium text-green-700">{submitMessage}</p>
-                )}
-
-                {submitError && (
-                  <p className="text-sm font-medium text-red-700">{submitError}</p>
-                )}
-              </div>
-            </form>
-          </section>
-
-          <section className="mt-6 border border-slate-200 rounded-lg bg-slate-50 p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-slate-900">Search &amp; Filter Resources</h2>
-
-            <form className="mt-4" onSubmit={handleSearch}>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="filterName" className="text-sm font-medium text-slate-700">Search by Name</label>
-                  <input
-                    id="filterName"
-                    name="name"
-                    type="text"
-                    value={filterData.name}
-                    onChange={handleFilterInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    placeholder="e.g., Computer Lab"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="filterType" className="text-sm font-medium text-slate-700">Filter by Type</label>
-                  <input
-                    id="filterType"
-                    name="type"
-                    type="text"
-                    value={filterData.type}
-                    onChange={handleFilterInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    placeholder="e.g., Lab"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="filterLocation" className="text-sm font-medium text-slate-700">Filter by Location</label>
-                  <input
-                    id="filterLocation"
-                    name="location"
-                    type="text"
-                    value={filterData.location}
-                    onChange={handleFilterInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    placeholder="e.g., Block A"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="filterStatus" className="text-sm font-medium text-slate-700">Filter by Status</label>
-                  <input
-                    id="filterStatus"
-                    name="status"
-                    type="text"
-                    value={filterData.status}
-                    onChange={handleFilterInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    placeholder="e.g., Available"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="filterMinCapacity" className="text-sm font-medium text-slate-700">Minimum Capacity</label>
-                  <input
-                    id="filterMinCapacity"
-                    name="minCapacity"
-                    type="number"
-                    min="0"
-                    value={filterData.minCapacity}
-                    onChange={handleFilterInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    placeholder="e.g., 40"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <button
-                  type="submit"
-                  className={
-                    filtering
-                      ? 'inline-flex items-center rounded-md bg-slate-400 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed'
-                      : 'inline-flex items-center rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-300'
-                  }
-                  disabled={filtering}
-                >
-                  {filtering ? 'Searching...' : 'Search'}
-                </button>
-
-                <button
-                  type="button"
-                  className="inline-flex items-center rounded-md bg-slate-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
-                  onClick={handleResetFilters}
-                  disabled={filtering}
-                >
-                  Reset
-                </button>
-              </div>
-            </form>
-          </section>
-
-          <section className="mt-6">
-            {loading && <p className="py-3 text-sm text-slate-700">Loading resources...</p>}
-
-            {!loading && error && (
-              <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && resources.length === 0 && (
-              <p className="py-3 text-sm text-slate-700">No resources available at the moment.</p>
-            )}
-
-            {!loading && !error && resources.length > 0 && (
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="table w-full min-w-[1020px] border-collapse">
-                  <thead className="bg-slate-100">
-                    <tr>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Name</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Type</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Capacity</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Location</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Availability Start</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Availability End</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Status</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Description</th>
-                      <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resources.map((resource, index) => {
-                      const resourceId = getResourceId(resource);
-                      const editDisabled = !resourceId || submitting || Boolean(deletingResourceId);
-                      const deleteDisabled = !resourceId || submitting || deletingResourceId === resourceId;
-
-                      return (
-                        <tr key={resourceId || index} className="border-b border-slate-200 last:border-b-0">
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.name || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.type || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.capacity ?? '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.location || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.availabilityStart || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.availabilityEnd || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.status || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">{resource.description || '-'}</td>
-                          <td className="px-3 py-3 text-sm text-slate-700 align-top">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleEdit(resource)}
-                                className={
-                                  editDisabled
-                                    ? 'rounded-md bg-slate-400 px-3 py-1.5 text-xs font-semibold text-white cursor-not-allowed'
-                                    : 'rounded-md bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-300'
-                                }
-                                disabled={editDisabled}
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(resourceId)}
-                                className={
-                                  deleteDisabled
-                                    ? 'rounded-md bg-slate-400 px-3 py-1.5 text-xs font-semibold text-white cursor-not-allowed'
-                                    : 'rounded-md bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300'
-                                }
-                                disabled={deleteDisabled}
-                              >
-                                {deletingResourceId === resourceId ? 'Deleting...' : 'Delete'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
         </div>
+
+        {submitMessage && (
+          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            {submitMessage}
+          </div>
+        )}
+
+        {submitError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {submitError}
+          </div>
+        )}
+
+        <section className="mb-6 rounded-2xl bg-white p-6 shadow-md">
+          <ResourceForm
+            mode="add"
+            formData={addFormData}
+            formErrors={addFormErrors}
+            touchedFields={addTouchedFields}
+            hasSubmitted={addHasSubmitted}
+            onInputChange={handleAddInputChange}
+            onFieldBlur={handleAddFieldBlur}
+            onSubmit={handleAddSubmit}
+            submitting={addSubmitting}
+            typeOptions={typeOptions}
+            locationOptions={locationOptions}
+            availabilityStartOptions={availabilityStartOptions}
+            availabilityEndOptions={availabilityEndOptions}
+            statusOptions={statusOptions}
+          />
+        </section>
+
+        <section className="mb-6 rounded-2xl bg-white p-6 shadow-md">
+          <h2 className="text-lg font-semibold text-slate-900">Search &amp; Filter Resources</h2>
+
+          <form className="mt-4" onSubmit={handleSearch}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="filterName" className="text-sm font-medium text-slate-700">Search by Name</label>
+                <input
+                  id="filterName"
+                  name="name"
+                  type="text"
+                  value={filterData.name}
+                  onChange={handleFilterInputChange}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder="e.g., Computer Lab"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="filterType" className="text-sm font-medium text-slate-700">Filter by Type</label>
+                <select
+                  id="filterType"
+                  name="type"
+                  value={filterData.type}
+                  onChange={handleFilterInputChange}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                >
+                  <option value="">All types</option>
+                  {typeOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="filterLocation" className="text-sm font-medium text-slate-700">Filter by Location</label>
+                <select
+                  id="filterLocation"
+                  name="location"
+                  value={filterData.location}
+                  onChange={handleFilterInputChange}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                >
+                  <option value="">All locations</option>
+                  {locationOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="filterStatus" className="text-sm font-medium text-slate-700">Filter by Status</label>
+                <select
+                  id="filterStatus"
+                  name="status"
+                  value={filterData.status}
+                  onChange={handleFilterInputChange}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                >
+                  <option value="">All statuses</option>
+                  {statusOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="filterMinCapacity" className="text-sm font-medium text-slate-700">Minimum Capacity</label>
+                <input
+                  id="filterMinCapacity"
+                  name="minCapacity"
+                  type="number"
+                  min="0"
+                  value={filterData.minCapacity}
+                  onChange={handleFilterInputChange}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder="e.g., 40"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                className={
+                  filtering
+                    ? 'inline-flex items-center rounded-xl bg-blue-300 px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-not-allowed transition duration-200'
+                    : 'inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                }
+                disabled={filtering}
+              >
+                {filtering ? 'Searching...' : 'Search'}
+              </button>
+
+              <button
+                type="button"
+                className="inline-flex items-center rounded-xl bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onClick={handleResetFilters}
+                disabled={filtering}
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="mb-6">
+          <ResourceTable
+            resources={resources}
+            loading={loading}
+            error={error}
+            onEdit={openEditModal}
+            onRequestDelete={openDeleteModal}
+            onBook={handleBookResource}
+            getResourceId={getResourceId}
+            isBookable={isBookable}
+            deletingResourceId={deletingResourceId}
+            actionBusy={actionBusy}
+          />
+        </section>
       </div>
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <ResourceForm
+              mode="edit"
+              formData={editFormData}
+              formErrors={editFormErrors}
+              touchedFields={editTouchedFields}
+              hasSubmitted={editHasSubmitted}
+              onInputChange={handleEditInputChange}
+              onFieldBlur={handleEditFieldBlur}
+              onSubmit={handleUpdateSubmit}
+              onCancel={closeEditModal}
+              submitting={editSubmitting}
+              typeOptions={typeOptions}
+              locationOptions={locationOptions}
+              availabilityStartOptions={availabilityStartOptions}
+              availabilityEndOptions={availabilityEndOptions}
+              statusOptions={statusOptions}
+            />
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900">Confirm Deletion</h3>
+            <p className="mt-3 text-sm text-slate-700">
+              Are you sure you want to delete this resource?
+            </p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                className="inline-flex items-center rounded-xl bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={Boolean(deletingResourceId)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmDeleteResource}
+                className={
+                  deletingResourceId
+                    ? 'inline-flex items-center rounded-xl bg-red-300 px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-not-allowed transition duration-200'
+                    : 'inline-flex items-center rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                }
+                disabled={Boolean(deletingResourceId)}
+              >
+                {deletingResourceId ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

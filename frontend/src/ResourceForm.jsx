@@ -1,152 +1,239 @@
 function ResourceForm({
-  styles,
+  mode,
   formData,
-  setFormData,
-  isEditMode,
-  submitting,
+  formErrors,
+  touchedFields,
+  hasSubmitted,
+  onInputChange,
+  onFieldBlur,
   onSubmit,
-  submitMessage,
-  submitError,
+  onCancel,
+  submitting,
+  typeOptions,
+  locationOptions,
+  availabilityStartOptions,
+  availabilityEndOptions,
+  statusOptions,
 }) {
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const isEditMode = mode === 'edit';
+
+  const getFieldError = (fieldName) => {
+    if (!hasSubmitted && !touchedFields[fieldName]) {
+      return '';
+    }
+
+    return formErrors[fieldName] || '';
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    onSubmit();
+  const getInputClass = (fieldName) => {
+    const baseClasses = 'w-full border rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none';
+    const invalidClasses = 'border-red-500';
+    const validClasses = 'border-slate-300';
+
+    return baseClasses + ' ' + (getFieldError(fieldName) ? invalidClasses : validClasses);
   };
+
+  const getTextareaClass = (fieldName) => getInputClass(fieldName) + ' resize-none';
 
   return (
-    <section style={styles.formSection}>
-      <h2 style={styles.formTitle}>{isEditMode ? 'Edit Resource' : 'Add New Resource'}</h2>
+    <>
+      <h2 className="text-lg font-semibold text-slate-900">
+        {isEditMode ? 'Edit Resource' : 'Add New Resource'}
+      </h2>
 
-      <form onSubmit={handleSubmit}>
-        <div style={styles.formGrid}>
-          <div style={styles.field}>
-            <label htmlFor="name" style={styles.label}>Name</label>
+      <form className="mt-4" onSubmit={onSubmit} noValidate>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="name" className="text-sm font-medium text-slate-700">Name</label>
             <input
               id="name"
               name="name"
               type="text"
               value={formData.name}
-              onChange={handleInputChange}
-              style={styles.input}
-              required
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('name')}
+              aria-invalid={Boolean(getFieldError('name'))}
+              placeholder="Enter resource name"
             />
+            {getFieldError('name') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('name')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="type" style={styles.label}>Type</label>
-            <input
+          <div className="flex flex-col gap-1">
+            <label htmlFor="type" className="text-sm font-medium text-slate-700">Type</label>
+            <select
               id="type"
               name="type"
-              type="text"
               value={formData.type}
-              onChange={handleInputChange}
-              style={styles.input}
-              required
-            />
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('type')}
+              aria-invalid={Boolean(getFieldError('type'))}
+            >
+              <option value="">Select type</option>
+              {typeOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {getFieldError('type') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('type')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="capacity" style={styles.label}>Capacity</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="capacity" className="text-sm font-medium text-slate-700">Capacity</label>
             <input
               id="capacity"
               name="capacity"
               type="number"
-              min="1"
+              min="2"
               value={formData.capacity}
-              onChange={handleInputChange}
-              style={styles.input}
-              required
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('capacity')}
+              aria-invalid={Boolean(getFieldError('capacity'))}
+              placeholder="Enter capacity"
             />
+            {getFieldError('capacity') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('capacity')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="location" style={styles.label}>Location</label>
-            <input
+          <div className="flex flex-col gap-1">
+            <label htmlFor="location" className="text-sm font-medium text-slate-700">Location</label>
+            <select
               id="location"
               name="location"
-              type="text"
               value={formData.location}
-              onChange={handleInputChange}
-              style={styles.input}
-              required
-            />
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('location')}
+              aria-invalid={Boolean(getFieldError('location'))}
+            >
+              <option value="">Select location</option>
+              {locationOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {getFieldError('location') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('location')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="availabilityStart" style={styles.label}>Availability Start</label>
-            <input
+          <div className="flex flex-col gap-1">
+            <label htmlFor="availabilityStart" className="text-sm font-medium text-slate-700">Availability Start</label>
+            <select
               id="availabilityStart"
               name="availabilityStart"
-              type="text"
               value={formData.availabilityStart}
-              onChange={handleInputChange}
-              style={styles.input}
-              placeholder="e.g., 08:00"
-              required
-            />
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('availabilityStart')}
+              aria-invalid={Boolean(getFieldError('availabilityStart'))}
+            >
+              <option value="">Select start time</option>
+              {availabilityStartOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {getFieldError('availabilityStart') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('availabilityStart')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="availabilityEnd" style={styles.label}>Availability End</label>
-            <input
+          <div className="flex flex-col gap-1">
+            <label htmlFor="availabilityEnd" className="text-sm font-medium text-slate-700">Availability End</label>
+            <select
               id="availabilityEnd"
               name="availabilityEnd"
-              type="text"
               value={formData.availabilityEnd}
-              onChange={handleInputChange}
-              style={styles.input}
-              placeholder="e.g., 17:00"
-              required
-            />
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('availabilityEnd')}
+              aria-invalid={Boolean(getFieldError('availabilityEnd'))}
+            >
+              <option value="">Select end time</option>
+              {availabilityEndOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {getFieldError('availabilityEnd') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('availabilityEnd')}</p>
+            )}
           </div>
 
-          <div style={styles.field}>
-            <label htmlFor="status" style={styles.label}>Status</label>
-            <input
+          <div className="flex flex-col gap-1">
+            <label htmlFor="status" className="text-sm font-medium text-slate-700">Status</label>
+            <select
               id="status"
               name="status"
-              type="text"
               value={formData.status}
-              onChange={handleInputChange}
-              style={styles.input}
-              required
-            />
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('status')}
+              aria-invalid={Boolean(getFieldError('status'))}
+            >
+              <option value="">Select status</option>
+              {statusOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {getFieldError('status') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('status')}</p>
+            )}
           </div>
 
-          <div style={{ ...styles.field, ...styles.fullWidthField }}>
-            <label htmlFor="description" style={styles.label}>Description</label>
+          <div className="flex flex-col gap-1 md:col-span-3">
+            <label htmlFor="description" className="text-sm font-medium text-slate-700">Description</label>
             <textarea
               id="description"
               name="description"
               value={formData.description}
-              onChange={handleInputChange}
-              style={styles.textarea}
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getTextareaClass('description')}
+              aria-invalid={Boolean(getFieldError('description'))}
+              placeholder="Optional description (max 250 characters)"
+              rows={4}
             />
+            {getFieldError('description') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('description')}</p>
+            )}
           </div>
         </div>
 
-        <div style={styles.submitRow}>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            style={submitting ? styles.submitButtonDisabled : styles.submitButton}
+            className={
+              submitting
+                ? 'inline-flex items-center rounded-xl bg-blue-300 px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-not-allowed transition duration-200'
+                : (
+                  isEditMode
+                    ? 'inline-flex items-center rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                    : 'inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                )
+            }
             disabled={submitting}
           >
             {submitting ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Resource' : 'Add Resource')}
           </button>
 
-          {submitMessage && <p style={styles.successText}>{submitMessage}</p>}
-          {submitError && <p style={styles.submitErrorText}>{submitError}</p>}
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex items-center rounded-xl bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </form>
-    </section>
+    </>
   );
 }
 
