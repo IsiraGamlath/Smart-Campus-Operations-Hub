@@ -23,68 +23,6 @@ function App() {
     fetchBookings();
   }, []);
 
-  const containerStyle = {
-    minHeight: '100vh',
-    backgroundColor: '#ffffff',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    padding: '40px 20px',
-    boxSizing: 'border-box',
-    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-    color: '#1f2937'
-  };
-
-  const cardStyle = {
-    width: '100%',
-    maxWidth: '1000px',
-    backgroundColor: '#ffffff',
-    borderRadius: '14px',
-    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
-    padding: '28px'
-  };
-
-  const titleStyle = {
-    margin: 0,
-    fontSize: '30px',
-    fontWeight: 700,
-    color: '#0f172a'
-  };
-
-  const subtitleStyle = {
-    marginTop: '8px',
-    marginBottom: '24px',
-    fontSize: '16px',
-    color: '#475569'
-  };
-
-  const tableWrapperStyle = {
-    border: '1px solid #e2e8f0',
-    borderRadius: '12px',
-    overflow: 'hidden'
-  };
-
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '14px'
-  };
-
-  const headerCellStyle = {
-    backgroundColor: '#f8fafc',
-    color: '#334155',
-    textAlign: 'left',
-    padding: '14px 16px',
-    borderBottom: '1px solid #e2e8f0',
-    fontWeight: 600
-  };
-
-  const cellStyle = {
-    padding: '14px 16px',
-    borderBottom: '1px solid #f1f5f9',
-    color: '#1e293b'
-  };
-
   const statusBadge = (status) => {
     const colors = {
       APPROVED: { bg: '#dcfce7', text: '#166534' },
@@ -97,15 +35,8 @@ function App() {
 
     return (
       <span
-        style={{
-          display: 'inline-block',
-          padding: '4px 10px',
-          borderRadius: '999px',
-          fontSize: '12px',
-          fontWeight: 600,
-          backgroundColor: style.bg,
-          color: style.text
-        }}
+        className="inline-block rounded-full px-2.5 py-1 text-xs font-semibold"
+        style={{ backgroundColor: style.bg, color: style.text }}
       >
         {status || 'N/A'}
       </span>
@@ -113,39 +44,39 @@ function App() {
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={titleStyle}>Smart Campus Booking System</h1>
-        <p style={subtitleStyle}>All Bookings</p>
+    <div className="min-h-screen bg-white px-5 py-10 text-slate-800">
+      <div className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-7 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
+        <h1 className="m-0 text-3xl font-bold text-slate-900">Smart Campus Booking System</h1>
+        <p className="mb-6 mt-2 text-base text-slate-600">All Bookings</p>
 
         {loading ? (
-          <p style={{ margin: 0, color: '#475569' }}>Loading bookings...</p>
+          <p className="m-0 text-slate-600">Loading bookings...</p>
         ) : bookings.length === 0 ? (
-          <p style={{ margin: 0, color: '#475569' }}>No bookings found</p>
+          <p className="m-0 text-slate-600">No bookings found</p>
         ) : (
-          <div style={tableWrapperStyle}>
-            <table style={tableStyle}>
+          <div className="overflow-hidden rounded-xl border border-slate-200">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th style={headerCellStyle}>User</th>
-                  <th style={headerCellStyle}>Resource</th>
-                  <th style={headerCellStyle}>Date</th>
-                  <th style={headerCellStyle}>Time</th>
-                  <th style={headerCellStyle}>Status</th>
+                  <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">User</th>
+                  <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Resource</th>
+                  <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Date</th>
+                  <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Time</th>
+                  <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {bookings.map((booking, index) => (
                   <tr key={booking.id || index}>
-                    <td style={cellStyle}>{booking.userId || '-'}</td>
-                    <td style={cellStyle}>{booking.resourceId || '-'}</td>
-                    <td style={cellStyle}>{booking.date || '-'}</td>
-                    <td style={cellStyle}>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-800">{booking.userId || '-'}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-800">{booking.resourceId || '-'}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-800">{booking.date || '-'}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-800">
                       {booking.startTime && booking.endTime
                         ? `${booking.startTime} - ${booking.endTime}`
                         : '-'}
                     </td>
-                    <td style={cellStyle}>{statusBadge(booking.status)}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-800">{statusBadge(booking.status)}</td>
                   </tr>
                 ))}
               </tbody>
