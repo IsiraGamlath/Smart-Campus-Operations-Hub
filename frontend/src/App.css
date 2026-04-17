@@ -1,38 +1,364 @@
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
   min-height: 100vh;
+  background: linear-gradient(180deg, #f6f8fc 0%, #edf2f7 100%);
+  color: #0f172a;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 32px 20px;
+}
+
+.page-container {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.page-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.page-header h1 {
+  margin: 8px 0 8px;
+  font-size: clamp(2rem, 3.2vw, 3.5rem);
+  line-height: 1.05;
+}
+
+.page-description,
+.section-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.ticket-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(360px, 1fr);
+}
+
+.ticket-form-card,
+.ticket-list-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  padding: 28px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ticket-form {
+  display: grid;
+  gap: 18px;
+}
+
+.ticket-form label {
+  display: grid;
+  gap: 10px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ticket-form input,
+.ticket-form textarea,
+.ticket-form select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.98rem;
+  background: #f8fafc;
+  color: #0f172a;
+  outline: none;
+}
+
+.ticket-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.primary-button {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+}
+
+.primary-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.secondary-button {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+.danger-button {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.danger-button:hover {
+  transform: translateY(-1px);
+}
+
+.form-error {
+  color: #b91c1c;
+  font-size: 0.95rem;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 18px;
+}
+
+.ticket-row {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.ticket-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ticket-summary h3 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+}
+
+/* 🔥 NEW: clickable ticket link */
+.ticket-link {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+
+.ticket-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.ticket-description {
+  margin: 0;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.ticket-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.status-badge,
+.priority-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
-.App-link {
-  color: #61dafb;
+.status-open {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+.status-in_progress {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-closed {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.priority-badge {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.ticket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toast-message {
+  padding: 14px 18px;
+  border-radius: 18px;
+  font-weight: 600;
+  max-width: 100%;
+}
+
+.toast-message.success {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.toast-message.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.ticket-detail-page {
+  display: grid;
+  gap: 24px;
+}
+
+.detail-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  padding: 32px;
+  display: grid;
+  gap: 24px;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.detail-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.detail-row {
+  display: grid;
+  gap: 24px;
+}
+
+.detail-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 22px;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.image-placeholder {
+  min-height: 120px;
+  border-radius: 18px;
+  background: #e2e8f0;
+  display: grid;
+  place-items: center;
+  color: #475569;
+  font-weight: 600;
+}
+
+.comment-list {
+  display: grid;
+  gap: 14px;
+}
+
+.comment-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.comment-item p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.comment-input-group {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.comment-input-group textarea {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid #cbd5e1;
+  padding: 16px;
+  resize: vertical;
+  font-size: 0.98rem;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.loading-state,
+.empty-state {
+  padding: 28px;
+  border-radius: 18px;
+  text-align: center;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+@media (max-width: 860px) {
+  .ticket-grid {
+    grid-template-columns: 1fr;
   }
 }
