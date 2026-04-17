@@ -39,6 +39,9 @@ export const uploadTicketImages = (ticketId, files) => {
 export const addComment = (ticketId, text) => 
   api.post(`/tickets/${ticketId}/comments`, { text });
 
+export const deleteComment = (ticketId, commentId) =>
+  api.delete(`/tickets/${ticketId}/comments/${commentId}`);
+
 export const deleteImage = (ticketId, url) =>
   api.delete(`/tickets/${ticketId}/image`, { params: { url } });
 

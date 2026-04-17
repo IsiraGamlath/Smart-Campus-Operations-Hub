@@ -46,10 +46,19 @@ public class TicketService {
         ticket.setLocation(updatedTicket.getLocation());
         ticket.setCategory(updatedTicket.getCategory());
         ticket.setDescription(updatedTicket.getDescription());
-        ticket.setStatus(updatedTicket.getStatus());
-        ticket.setPriority(updatedTicket.getPriority());
-        ticket.setAssignedTo(updatedTicket.getAssignedTo());
-        ticket.setResolutionNotes(updatedTicket.getResolutionNotes());
+
+        if (updatedTicket.getStatus() != null) {
+            ticket.setStatus(updatedTicket.getStatus());
+        }
+        if (updatedTicket.getPriority() != null) {
+            ticket.setPriority(updatedTicket.getPriority());
+        }
+        if (updatedTicket.getAssignedTo() != null) {
+            ticket.setAssignedTo(updatedTicket.getAssignedTo());
+        }
+        if (updatedTicket.getResolutionNotes() != null) {
+            ticket.setResolutionNotes(updatedTicket.getResolutionNotes());
+        }
 
         ticket.setUpdatedAt(LocalDateTime.now());
 

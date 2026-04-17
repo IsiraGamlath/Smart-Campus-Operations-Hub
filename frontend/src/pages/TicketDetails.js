@@ -285,7 +285,7 @@ const TicketDetails = () => {
 
           <form onSubmit={handleAddComment} className="flex gap-4">
             <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold shrink-0 shadow-sm border border-primary-50">
-              {mockUser.name.charAt(0)}
+              {mockUser?.name?.charAt(0) || 'U'}
             </div>
             <div className="flex-1 space-y-3">
               <Textarea 
@@ -308,7 +308,7 @@ const TicketDetails = () => {
             {ticket.comments?.map(comment => (
               <div key={comment.id} className="flex gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold shrink-0">
-                  {comment.userName.charAt(0)}
+                  {comment?.userName?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between">

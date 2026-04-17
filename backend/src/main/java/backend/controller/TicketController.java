@@ -1,15 +1,19 @@
 package backend.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile; //  IMPORT
+import org.springframework.web.multipart.MultipartFile;
 
+import backend.dto.CommentRequest;
+import backend.dto.TicketRequest;
+import backend.dto.TicketResponse;
 import backend.model.Ticket;
-import backend.model.CommentRequest;
+import backend.model.TicketStatus;
 import backend.service.TicketService;
 
 @RestController
@@ -23,63 +27,75 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
-    //  CREATE
     @PostMapping
-    public ResponseEntity<Ticket> create(@Valid @RequestBody Ticket ticket) {
+    public ResponseEntity<TicketResponse> create(@Valid @RequestBody TicketRequest request) {
+        Ticket ticket = toTicket(request);
         Ticket createdTicket = ticketService.createTicket(ticket);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTicket);
+        return ResponseEntity.status(HttpStatus.CREATED).body(TicketResponse.from(createdTicket));
     }
 
-    //  GET ALL
     @GetMapping
-    public ResponseEntity<List<Ticket>> getAll() {
-        return ResponseEntity.ok(ticketService.getAllTickets());
+    public ResponseEntity<List<TicketResponse>> getAll() {
+        List<TicketResponse> tickets = ticketService.getAllTickets().stream()
+                .map(TicketResponse::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(tickets);
     }
 
-    //  GET BY ID
     @GetMapping("/{id}")
-    public ResponseEntity<Ticket> getById(@PathVariable String id) {
-        return ResponseEntity.ok(ticketService.getTicketById(id));
+    public ResponseEntity<TicketResponse> getById(@PathVariable String id) {
+        return ResponseEntity.ok(TicketResponse.from(ticketService.getTicketById(id)));
     }
 
-    //  UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<Ticket> update(@PathVariable String id, @Valid @RequestBody Ticket ticket) {
-        return ResponseEntity.ok(ticketService.updateTicket(id, ticket));
+    public ResponseEntity<TicketResponse> update(@PathVariable String id, @Valid @RequestBody TicketRequest request) {
+        Ticket updatedTicket = toTicket(request);
+        return ResponseEntity.ok(TicketResponse.from(ticketService.updateTicket(id, updatedTicket)));
     }
 
-    //  ADD COMMENT
     @PostMapping("/{id}/comments")
-    public ResponseEntity<Ticket> addComment(
+    public ResponseEntity<TicketResponse> addComment(
             @PathVariable String id,
             @RequestBody CommentRequest request) {
 
-        return ResponseEntity.ok(
-                ticketService.addComment(id, request.getText())
-        );
+        return ResponseEntity.ok(TicketResponse.from(ticketService.addComment(id, request.getText())));
     }
 
-    //  IMAGE UPLOAD (NEW)
     @PostMapping("/{id}/upload")
-    public ResponseEntity<Ticket> uploadImages(
+    public ResponseEntity<TicketResponse> uploadImages(
             @PathVariable String id,
             @RequestParam("files") MultipartFile[] files) throws Exception {
 
-        return ResponseEntity.ok(ticketService.uploadImages(id, files));
+        return ResponseEntity.ok(TicketResponse.from(ticketService.uploadImages(id, files)));
     }
 
     @DeleteMapping("/{id}/image")
-    public ResponseEntity<Ticket> deleteImage(
+    public ResponseEntity<TicketResponse> deleteImage(
             @PathVariable String id,
             @RequestParam("url") String url) {
 
-        return ResponseEntity.ok(ticketService.deleteImage(id, url));
+        return ResponseEntity.ok(TicketResponse.from(ticketService.deleteImage(id, url)));
     }
 
-    //  DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         ticketService.deleteTicket(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Ticket toTicket(TicketRequest request) {
+        Ticket ticket = new Ticket();
+        ticket.setLocation(request.getLocation());
+        ticket.setCategory(request.getCategory());
+        ticket.setDescription(request.getDescription());
+        ticket.setPriority(request.getPriority());
+        ticket.setAssignedTo(request.getAssignedTo());
+        ticket.setResolutionNotes(request.getResolutionNotes());
+
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            ticket.setStatus(TicketStatus.valueOf(request.getStatus().strip().toUpperCase()));
+        }
+
+        return ticket;
     }
 }
