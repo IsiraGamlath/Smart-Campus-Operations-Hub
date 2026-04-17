@@ -18,9 +18,20 @@ function App() {
   const [error, setError] = useState('');
 
   const [formData, setFormData] = useState(initialFormData);
+  const [editingResourceId, setEditingResourceId] = useState(null);
   const [submitMessage, setSubmitMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deletingResourceId, setDeletingResourceId] = useState('');
+
+  const isEditMode = Boolean(editingResourceId);
+
+  const getResourceId = (resource) => resource?.id || resource?._id || '';
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setEditingResourceId(null);
+  };
 
   const fetchResources = async (showLoading = true) => {
     if (showLoading) {
@@ -32,7 +43,7 @@ function App() {
       const response = await fetch('http://localhost:8082/api/resources');
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch resources (HTTP ${response.status})`);
+        throw new Error('Failed to fetch resources (HTTP ' + response.status + ')');
       }
 
       const data = await response.json();
@@ -58,20 +69,95 @@ function App() {
     }));
   };
 
+  const handleEdit = (resource) => {
+    const resourceId = getResourceId(resource);
+
+    if (!resourceId) {
+      setSubmitMessage('');
+      setSubmitError('Cannot edit this resource because no id was found.');
+      return;
+    }
+
+    setFormData({
+      name: resource.name || '',
+      type: resource.type || '',
+      capacity: resource.capacity ?? '',
+      location: resource.location || '',
+      availabilityStart: resource.availabilityStart || '',
+      availabilityEnd: resource.availabilityEnd || '',
+      status: resource.status || '',
+      description: resource.description || '',
+    });
+
+    setEditingResourceId(resourceId);
+    setSubmitMessage('');
+    setSubmitError('');
+  };
+
+  const handleDelete = async (resourceId) => {
+    if (!resourceId) {
+      setSubmitMessage('');
+      setSubmitError('Cannot delete this resource because no id was found.');
+      return;
+    }
+
+    const confirmed = window.confirm('Are you sure you want to delete this resource?');
+    if (!confirmed) {
+      return;
+    }
+
+    setSubmitMessage('');
+    setSubmitError('');
+    setDeletingResourceId(resourceId);
+
+    try {
+      const response = await fetch('http://localhost:8082/api/resources/' + resourceId, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete resource (HTTP ' + response.status + ')');
+      }
+
+      if (editingResourceId === resourceId) {
+        resetForm();
+      }
+
+      await fetchResources(false);
+      setSubmitMessage('Resource deleted successfully.');
+    } catch (err) {
+      setSubmitError(err.message || 'An unexpected error occurred while deleting the resource.');
+    } finally {
+      setDeletingResourceId('');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitMessage('');
     setSubmitError('');
     setSubmitting(true);
 
+    if (isEditMode && !editingResourceId) {
+      setSubmitError('Cannot update this resource because no id was found.');
+      setSubmitting(false);
+      return;
+    }
+
     const payload = {
       ...formData,
       capacity: Number(formData.capacity),
     };
 
+    const url = isEditMode
+      ? 'http://localhost:8082/api/resources/' + editingResourceId
+      : 'http://localhost:8082/api/resources';
+
+    const method = isEditMode ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('http://localhost:8082/api/resources', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -79,14 +165,17 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to add resource (HTTP ${response.status})`);
+        throw new Error('Failed to ' + (isEditMode ? 'update' : 'add') + ' resource (HTTP ' + response.status + ')');
       }
 
-      setFormData(initialFormData);
+      resetForm();
       await fetchResources(false);
-      setSubmitMessage('Resource created successfully.');
+      setSubmitMessage(isEditMode ? 'Resource updated successfully.' : 'Resource created successfully.');
     } catch (err) {
-      setSubmitError(err.message || 'An unexpected error occurred while adding the resource.');
+      setSubmitError(
+        err.message
+          || 'An unexpected error occurred while ' + (isEditMode ? 'updating' : 'adding') + ' the resource.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -224,7 +313,7 @@ function App() {
     table: {
       width: '100%',
       borderCollapse: 'collapse',
-      minWidth: '900px',
+      minWidth: '1020px',
     },
     th: {
       backgroundColor: '#f1f5f9',
@@ -240,6 +329,41 @@ function App() {
       borderBottom: '1px solid #e5e7eb',
       fontSize: '0.9rem',
       verticalAlign: 'top',
+    },
+    actionsCell: {
+      display: 'flex',
+      gap: '8px',
+      flexWrap: 'wrap',
+    },
+    editButton: {
+      border: 'none',
+      backgroundColor: '#0ea5e9',
+      color: '#ffffff',
+      padding: '6px 10px',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+    },
+    deleteButton: {
+      border: 'none',
+      backgroundColor: '#ef4444',
+      color: '#ffffff',
+      padding: '6px 10px',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+    },
+    rowButtonDisabled: {
+      border: 'none',
+      backgroundColor: '#94a3b8',
+      color: '#ffffff',
+      padding: '6px 10px',
+      borderRadius: '6px',
+      cursor: 'not-allowed',
+      fontSize: '0.8rem',
+      fontWeight: '600',
     },
   };
 
@@ -269,11 +393,12 @@ function App() {
               <th style={styles.th}>Availability End</th>
               <th style={styles.th}>Status</th>
               <th style={styles.th}>Description</th>
+              <th style={styles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {resources.map((resource, index) => (
-              <tr key={resource.id || index}>
+              <tr key={getResourceId(resource) || index}>
                 <td style={styles.td}>{resource.name || '-'}</td>
                 <td style={styles.td}>{resource.type || '-'}</td>
                 <td style={styles.td}>{resource.capacity ?? '-'}</td>
@@ -282,6 +407,39 @@ function App() {
                 <td style={styles.td}>{resource.availabilityEnd || '-'}</td>
                 <td style={styles.td}>{resource.status || '-'}</td>
                 <td style={styles.td}>{resource.description || '-'}</td>
+                <td style={styles.td}>
+                  <div style={styles.actionsCell}>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(resource)}
+                      style={
+                        !getResourceId(resource) || submitting || Boolean(deletingResourceId)
+                          ? styles.rowButtonDisabled
+                          : styles.editButton
+                      }
+                      disabled={!getResourceId(resource) || submitting || Boolean(deletingResourceId)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(getResourceId(resource))}
+                      style={
+                        !getResourceId(resource) || submitting || deletingResourceId === getResourceId(resource)
+                          ? styles.rowButtonDisabled
+                          : styles.deleteButton
+                      }
+                      disabled={
+                        !getResourceId(resource)
+                        || submitting
+                        || deletingResourceId === getResourceId(resource)
+                      }
+                    >
+                      {deletingResourceId === getResourceId(resource) ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -300,7 +458,7 @@ function App() {
         </p>
 
         <section style={styles.formSection}>
-          <h2 style={styles.formTitle}>Add New Resource</h2>
+          <h2 style={styles.formTitle}>{isEditMode ? 'Edit Resource' : 'Add New Resource'}</h2>
 
           <form onSubmit={handleSubmit}>
             <div style={styles.formGrid}>
@@ -416,7 +574,7 @@ function App() {
                 style={submitting ? styles.submitButtonDisabled : styles.submitButton}
                 disabled={submitting}
               >
-                {submitting ? 'Adding...' : 'Add Resource'}
+                {submitting ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Resource' : 'Add Resource')}
               </button>
 
               {submitMessage && <p style={styles.successText}>{submitMessage}</p>}
