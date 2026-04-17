@@ -30,12 +30,25 @@ const initialFilterData = {
   minCapacity: '',
 };
 
+const parseTimeToMinutes = (timeValue) => {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeValue);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return (hours * 60) + minutes;
+};
+
 function App() {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
   const [editingResourceId, setEditingResourceId] = useState(null);
   const [submitMessage, setSubmitMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -82,8 +95,105 @@ function App() {
     return intersection;
   };
 
+  const validateField = (fieldName, fieldValue, currentData) => {
+    const value = typeof fieldValue === 'string' ? fieldValue : String(fieldValue ?? '');
+    const trimmedValue = value.trim();
+
+    switch (fieldName) {
+      case 'name':
+        if (trimmedValue.length < 3) {
+          return 'Resource name must be at least 3 characters';
+        }
+        return '';
+
+      case 'type':
+        if (!trimmedValue) {
+          return 'Please select a resource type';
+        }
+        return '';
+
+      case 'capacity':
+        if (!trimmedValue || Number.isNaN(Number(trimmedValue)) || Number(trimmedValue) < 2) {
+          return 'Capacity must be at least 2';
+        }
+        return '';
+
+      case 'location':
+        if (!trimmedValue) {
+          return 'Please select a location';
+        }
+        return '';
+
+      case 'availabilityStart':
+        if (!trimmedValue) {
+          return 'Please select the availability start time';
+        }
+        return '';
+
+      case 'availabilityEnd': {
+        const startValue = (currentData.availabilityStart || '').trim();
+        const endValue = trimmedValue;
+
+        if (!endValue) {
+          return 'Availability end time must be later than availability start';
+        }
+
+        const startMinutes = parseTimeToMinutes(startValue);
+        const endMinutes = parseTimeToMinutes(endValue);
+
+        if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+          return 'Availability end time must be later than availability start';
+        }
+
+        return '';
+      }
+
+      case 'status':
+        if (!trimmedValue) {
+          return 'Please select a status';
+        }
+        return '';
+
+      case 'description':
+        if (trimmedValue && value.length > 250) {
+          return 'Description must be less than 250 characters';
+        }
+        return '';
+
+      default:
+        return '';
+    }
+  };
+
+  const validateForm = (currentData) => {
+    const nextErrors = {};
+
+    Object.keys(initialFormData).forEach((fieldName) => {
+      const fieldError = validateField(fieldName, currentData[fieldName], currentData);
+
+      if (fieldError) {
+        nextErrors[fieldName] = fieldError;
+      }
+    });
+
+    return nextErrors;
+  };
+
+  const getInputClass = (fieldName) => {
+    const baseClasses = 'w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2';
+    const invalidClasses = 'border-red-500 focus:border-red-500 focus:ring-red-200';
+    const validClasses = 'border-slate-300 focus:border-sky-500 focus:ring-sky-200';
+
+    return baseClasses + ' ' + (formErrors[fieldName] ? invalidClasses : validClasses);
+  };
+
+  const getTextareaClass = (fieldName) => {
+    return getInputClass(fieldName) + ' min-h-[96px] resize-y';
+  };
+
   const resetForm = () => {
     setFormData(initialFormData);
+    setFormErrors({});
     setEditingResourceId(null);
   };
 
@@ -112,10 +222,35 @@ function App() {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
+    const nextData = {
+      ...formData,
       [name]: value,
-    }));
+    };
+
+    setFormData(nextData);
+
+    setFormErrors((prevErrors) => {
+      const nextErrors = { ...prevErrors };
+      const currentFieldError = validateField(name, value, nextData);
+
+      if (currentFieldError) {
+        nextErrors[name] = currentFieldError;
+      } else {
+        delete nextErrors[name];
+      }
+
+      if (name === 'availabilityStart') {
+        const endFieldError = validateField('availabilityEnd', nextData.availabilityEnd, nextData);
+
+        if (endFieldError) {
+          nextErrors.availabilityEnd = endFieldError;
+        } else {
+          delete nextErrors.availabilityEnd;
+        }
+      }
+
+      return nextErrors;
+    });
   };
 
   const handleFilterInputChange = (event) => {
@@ -210,6 +345,7 @@ function App() {
     });
 
     setEditingResourceId(resourceId);
+    setFormErrors({});
     setSubmitMessage('');
     setSubmitError('');
   };
@@ -250,6 +386,14 @@ function App() {
     event.preventDefault();
     setSubmitMessage('');
     setSubmitError('');
+
+    const validationErrors = validateForm(formData);
+    setFormErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
     setSubmitting(true);
 
     if (isEditMode && !editingResourceId) {
@@ -300,7 +444,7 @@ function App() {
               {isEditMode ? 'Edit Resource' : 'Add New Resource'}
             </h2>
 
-            <form className="mt-4" onSubmit={handleSubmit}>
+            <form className="mt-4" onSubmit={handleSubmit} noValidate>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1">
                   <label htmlFor="name" className="text-sm font-medium text-slate-700">Name</label>
@@ -310,9 +454,12 @@ function App() {
                     type="text"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('name')}
+                    aria-invalid={Boolean(formErrors.name)}
                   />
+                  {formErrors.name && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -323,9 +470,12 @@ function App() {
                     type="text"
                     value={formData.type}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('type')}
+                    aria-invalid={Boolean(formErrors.type)}
                   />
+                  {formErrors.type && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.type}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -334,12 +484,15 @@ function App() {
                     id="capacity"
                     name="capacity"
                     type="number"
-                    min="1"
+                    min="2"
                     value={formData.capacity}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('capacity')}
+                    aria-invalid={Boolean(formErrors.capacity)}
                   />
+                  {formErrors.capacity && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.capacity}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -350,9 +503,12 @@ function App() {
                     type="text"
                     value={formData.location}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('location')}
+                    aria-invalid={Boolean(formErrors.location)}
                   />
+                  {formErrors.location && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.location}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -364,9 +520,12 @@ function App() {
                     value={formData.availabilityStart}
                     onChange={handleInputChange}
                     placeholder="e.g., 08:00"
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('availabilityStart')}
+                    aria-invalid={Boolean(formErrors.availabilityStart)}
                   />
+                  {formErrors.availabilityStart && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.availabilityStart}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -378,9 +537,12 @@ function App() {
                     value={formData.availabilityEnd}
                     onChange={handleInputChange}
                     placeholder="e.g., 17:00"
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('availabilityEnd')}
+                    aria-invalid={Boolean(formErrors.availabilityEnd)}
                   />
+                  {formErrors.availabilityEnd && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.availabilityEnd}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -391,9 +553,12 @@ function App() {
                     type="text"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    required
+                    className={getInputClass('status')}
+                    aria-invalid={Boolean(formErrors.status)}
                   />
+                  {formErrors.status && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.status}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1 md:col-span-2 xl:col-span-3">
@@ -403,8 +568,12 @@ function App() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 min-h-[96px] resize-y focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    className={getTextareaClass('description')}
+                    aria-invalid={Boolean(formErrors.description)}
                   />
+                  {formErrors.description && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.description}</p>
+                  )}
                 </div>
               </div>
 
