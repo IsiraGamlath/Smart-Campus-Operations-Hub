@@ -1,4 +1,4 @@
-import ResourceRow from './ResourceRow';
+import ResourceRow from './ResourceRow.jsx';
 
 function ResourceTable({
   resources,
