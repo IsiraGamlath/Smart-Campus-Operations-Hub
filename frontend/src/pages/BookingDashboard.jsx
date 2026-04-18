@@ -14,7 +14,7 @@ function BookingDashboard() {
   const preselectedResourceId = searchParams.get("resourceId") || "";
 
   const handleUnauthorized = useCallback(() => {
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   }, [navigate]);
 
   const fetchBookings = useCallback(async () => {
@@ -138,11 +138,22 @@ function BookingDashboard() {
     }
   };
 
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <header>
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-bold text-slate-900">Smart Campus Booking System</h1>
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Back
+          </button>
         </header>
 
         {!isAdmin && (

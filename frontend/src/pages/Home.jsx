@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Data structures
 const NAV_LINKS = [
   { label: 'Resources', to: '/resources' },
-  { label: 'Bookings', href: '#bookings' },
-  { label: 'Tickets', href: '#tickets' },
+  { label: 'Bookings', to: '/bookings' },
+  { label: 'Tickets', to: '/tickets' },
 ];
 
 const FEATURES = [
@@ -99,9 +99,28 @@ function FadeInUp({ children, delay = 0 }) {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const dashboardPath = user?.role === 'ADMIN' ? '/admin-dashboard' : '/dashboard';
+  const showLogout = Boolean(user) && location.pathname === dashboardPath;
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:8080/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore network errors here and still clear local auth state.
+    } finally {
+      setUser(null);
+      navigate('/', { replace: true });
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -124,37 +143,36 @@ export default function Home() {
             {/* Desktop nav */}
             <div className="hidden gap-8 md:flex">
               {NAV_LINKS.map((link) => (
-                link.to ? (
-                  <Link
-                    key={link.label}
-                    to={link.to}
-                    className="text-sm font-medium transition hover:text-slate-900"
-                    style={{ color: '#64748b' }}
-                  >
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    className="text-sm font-medium transition hover:text-slate-900"
-                    style={{ color: '#64748b' }}
-                  >
-                    {link.label}
-                  </a>
-                )
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className="text-sm font-medium transition hover:text-slate-900"
+                  style={{ color: '#64748b' }}
+                >
+                  {link.label}
+                </Link>
               ))}
             </div>
 
             {/* Auth buttons */}
             <div className="flex items-center gap-3">
               {user ? (
-                <Link
-                  to="/dashboard"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Dashboard
-                </Link>
+                showLogout ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <Link
+                    to={dashboardPath}
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                  >
+                    Dashboard
+                  </Link>
+                )
               ) : (
                 <Link
                   to="/login"

@@ -16,7 +16,7 @@ function AdminDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (user.role !== 'ADMIN') {
@@ -38,7 +38,7 @@ function AdminDashboard() {
       // ignore
     } finally {
       setUser(null);
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     }
   };
 
@@ -93,18 +93,6 @@ function AdminDashboard() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link
-                to="/dashboard"
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                User Dashboard
-              </Link>
-              <Link
-                to="/bookings"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Booking Queue
-              </Link>
               <button
                 type="button"
                 onClick={handleLogout}

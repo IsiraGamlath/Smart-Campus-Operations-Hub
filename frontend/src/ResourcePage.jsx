@@ -425,17 +425,30 @@ function ResourcePage() {
 
   const actionBusy = addSubmitting || editSubmitting || filtering;
 
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6">
+    <main className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-            Facilities &amp; Assets Catalogue
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Module A - Facilities &amp; Assets Catalogue: View and monitor campus resources such as
-            rooms, labs, and shared spaces.
-          </p>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+              Facilities &amp; Assets Catalogue
+            </h1>
+            <p className="mt-2 text-sm text-slate-600 sm:text-base">
+              Module A - Facilities &amp; Assets Catalogue: View and monitor campus resources such as
+              rooms, labs, and shared spaces.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Back
+          </button>
         </div>
 
         {submitMessage && (
@@ -528,7 +541,7 @@ function ResourcePage() {
           />
         </>
       )}
-    </div>
+    </main>
   );
 }
 

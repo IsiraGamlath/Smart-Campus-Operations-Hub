@@ -23,12 +23,12 @@ function Dashboard() {
       // Ignore network errors here and still clear local auth state.
     } finally {
       setUser(null);
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     }
   };
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
