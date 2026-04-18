@@ -1,56 +1,67 @@
 import axios from "axios";
 
-const API = "http://localhost:8091/api/tickets";
+export const API_BASE_URL = "http://localhost:8091/api";
 
 const api = axios.create({
-  baseURL: API,
-  headers: {
-    "Content-Type": "application/json"
-  }
+  baseURL: API_BASE_URL,
 });
 
-//  GET ALL
-export const getTickets = () => api.get("");
+// ROBUST DEBUG LOGGING
+api.interceptors.request.use((config) => {
+  console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`, config.data || "");
+  return config;
+});
 
-//  GET BY ID
-export const getTicketById = (id) => api.get(`/${id}`);
-
-//  CREATE
-export const createTicket = (data) => api.post("", data);
-
-//  UPDATE
-export const updateTicket = (id, data) => api.put(`/${id}`, data);
-
-//  DELETE
-export const deleteTicket = (id) => api.delete(`/${id}`);
-
-//  ADD COMMENT
-export const addComment = (id, text) =>
-  api.post(`/${id}/comments`, { text });
-
-//  DELETE COMMENT
-export const deleteComment = (id, commentId) =>
-  api.delete(`/${id}/comments/${commentId}`);
-
-//  UPLOAD IMAGES
-export const uploadTicketImages = (id, files) => {
-  const formData = new FormData();
-
-  for (let i = 0; i < files.length; i++) {
-    formData.append("files", files[i]);
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Success] ${response.config.method.toUpperCase()} ${response.config.url}`, response.data);
+    return response;
+  },
+  (error) => {
+    console.error(`[API Error]`, error.response?.data || error.message);
+    return Promise.reject(error);
   }
+);
 
-  return api.post(`/${id}/upload`, formData, {
+export const getTickets = () => api.get("/tickets");
+
+export const getTicketById = (id) => api.get(`/tickets/${id}`);
+
+// NEW COMMENT ENDPOINTS (To match /api/comments)
+export const getComments = (ticketId) => api.get(`/comments/${ticketId}`);
+
+export const createComment = (ticketId, text) => 
+  api.post("/comments", { ticketId, text });
+
+// CREATE TICKET (FormData + Multipart)
+export const createTicket = (formData) => api.post("/tickets", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
+});
+
+export const updateTicket = (id, data) => api.put(`/tickets/${id}`, data);
+
+export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
+
+export const deleteComment = (id, commentId) =>
+  api.delete(`/tickets/${id}/comments/${commentId}`);
+
+export const deleteImage = (id, url) =>
+  api.delete(`/tickets/${id}/image`, {
+    params: { url },
+  });
+
+export const uploadTicketImages = (ticketId, selectedFile) => {
+  const formData = new FormData();
+  formData.append("file", selectedFile);
+  formData.append("ticketId", ticketId);
+
+  return api.post("/upload", formData, {
     headers: {
-      "Content-Type": "multipart/form-data"
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
 };
-
-// DELETE IMAGE
-export const deleteImage = (id, url) =>
-  api.delete(`/${id}/image`, {
-    params: { url }
-  });
 
 export default api;

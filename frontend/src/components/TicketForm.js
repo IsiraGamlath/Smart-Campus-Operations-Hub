@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 const defaultForm = {
   title: "",
@@ -8,14 +9,14 @@ const defaultForm = {
   status: "OPEN",
   location: "",
   category: "",
-  contact: ""
+  assignedTo: "",
+  resolutionNotes: ""
 };
 
 function TicketForm({ ticket, onSave, onCancel }) {
   const [form, setForm] = useState(defaultForm);
-  const [files, setFiles] = useState([]); // 🔥 image files
+  const [files, setFiles] = useState([]); 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (ticket) {
@@ -26,22 +27,23 @@ function TicketForm({ ticket, onSave, onCancel }) {
         status: ticket.status || "OPEN",
         location: ticket.location || "",
         category: ticket.category || "",
-        contact: ticket.contact || ""
+        assignedTo: ticket.assignedTo || "",
+        resolutionNotes: ticket.resolutionNotes || ""
       });
     } else {
       setForm(defaultForm);
     }
   }, [ticket]);
 
-  const isSubmitDisabled =
-    submitting || !form.title.trim() || !form.description.trim();
-
-  const priorityOptions = useMemo(() => ["LOW", "MEDIUM", "HIGH"], []);
-
-  const submitLabel = useMemo(() => {
-    if (submitting) return "Saving...";
-    return ticket ? "Update Ticket" : "Create Ticket";
-  }, [submitting, ticket]);
+  const isFormValid = () => {
+    return (
+      form.title.trim() &&
+      form.description.trim() &&
+      form.location.trim() &&
+      form.category.trim() &&
+      form.priority.trim()
+    );
+  };
 
   const handleChange = (field) => (event) => {
     setForm((current) => ({
@@ -50,42 +52,39 @@ function TicketForm({ ticket, onSave, onCancel }) {
     }));
   };
 
-  //  image select
   const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files).slice(0, 3); // max 3
+    const selected = Array.from(e.target.files).slice(0, 3);
     setFiles(selected);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (isSubmitDisabled) return;
+    if (!isFormValid()) {
+      toast.error("Please fill in all required fields (Title, Description, Location, Category, Priority)");
+      return;
+    }
 
     setSubmitting(true);
-    setError("");
+    console.log("FORM DATA SUBMITTING:", form);
 
     try {
-      //  send form data
-      const savedTicket = await onSave({
-        ...form,
-        status: form.status || "OPEN"
+      const response = await onSave({
+        title: form.title,
+        description: form.description,
+        priority: form.priority,
+        location: form.location,
+        category: form.category,
+        assignedTo: form.assignedTo,
+        resolutionNotes: form.resolutionNotes,
+        status: form.status
       });
-
-      //  upload images if files were selected
-      if (files.length > 0 && savedTicket?.id) {
-        const formData = new FormData();
-        files.forEach((file) => {
-          formData.append("images", file);
-        });
-        await fetch(`/api/tickets/${savedTicket.id}/images`, {
-          method: "POST",
-          body: formData
-        });
-      }
-
+      console.log("API RESPONSE SUCCESS:", response);
+      
       setForm(defaultForm);
       setFiles([]);
-    } catch {
-      setError("Could not save ticket. Please try again.");
+    } catch (error) {
+       console.error("FORM SUBMISSION ERROR:", error);
+       toast.error("Failed to save ticket. Check console for details.");
     } finally {
       setSubmitting(false);
     }
@@ -96,171 +95,108 @@ function TicketForm({ ticket, onSave, onCancel }) {
       <div className="section-header">
         <div>
           <h2>{ticket ? "Edit Ticket" : "New Incident Ticket"}</h2>
-          <p className="section-subtitle">
-            Capture issue details and assign a priority for the operations team.
-          </p>
         </div>
         {ticket && (
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={onCancel}
-          >
+          <button type="button" className="secondary-button" onClick={onCancel}>
             Cancel
           </button>
         )}
       </div>
 
       <form className="ticket-form" onSubmit={handleSubmit}>
-        
-        {/* TITLE */}
-        <label htmlFor="title">
-          Title
+        <div className="form-group">
+          <label>Title *</label>
           <input
-            id="title"
-            name="title"
             value={form.title}
             onChange={handleChange("title")}
-            placeholder="Enter incident title"
+            placeholder="e.g. Broken AC in Lab 1"
           />
-        </label>
+        </div>
 
-        {/* DESCRIPTION */}
-        <label htmlFor="description">
-          Description
+        <div className="form-group">
+          <label>Description *</label>
           <textarea
-            id="description"
-            name="description"
             value={form.description}
             onChange={handleChange("description")}
-            placeholder="Describe the issue in detail"
+            placeholder="Detail the issue..."
             rows={4}
           />
-        </label>
+        </div>
 
-        {/*  LOCATION */}
-        <label htmlFor="location">
-          Location
-          <select
-            id="location"
-            name="location"
-            value={form.location}
-            onChange={handleChange("location")}
-          >
-            <option value="">Select location</option>
-            <option value="Lab 1">Lab 1</option>
-            <option value="Library">Library</option>
-            <option value="Auditorium">Auditorium</option>
-          </select>
-        </label>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Location *</label>
+            <select value={form.location} onChange={handleChange("location")}>
+              <option value="">Select location</option>
+              <option value="Computer Lab 1">Computer Lab 1</option>
+              <option value="Lecture Hall A">Lecture Hall A</option>
+              <option value="Main Library">Main Library</option>
+              <option value="Cafeteria">Cafeteria</option>
+            </select>
+          </div>
 
-        {/*  CATEGORY */}
-        <label htmlFor="category">
-          Category
-          <select
-            id="category"
-            name="category"
-            value={form.category}
-            onChange={handleChange("category")}
-          >
-            <option value="">Select category</option>
-            <option value="Electrical">Electrical</option>
-            <option value="Network">Network</option>
-            <option value="Hardware">Hardware</option>
-          </select>
-        </label>
+          <div className="form-group">
+            <label>Category *</label>
+            <select value={form.category} onChange={handleChange("category")}>
+              <option value="">Select category</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Network">Network</option>
+              <option value="Furniture">Furniture</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+        </div>
 
-        {/*  CONTACT */}
-        <label htmlFor="contact">
-          Contact
-          <input
-            id="contact"
-            name="contact"
-            value={form.contact}
-            onChange={handleChange("contact")}
-            placeholder="Your contact details"
-          />
-        </label>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Priority *</label>
+            <select value={form.priority} onChange={handleChange("priority")}>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="URGENT">URGENT</option>
+            </select>
+          </div>
 
-        {/* PRIORITY */}
-        <label htmlFor="priority">
-          Priority
-          <select
-            id="priority"
-            name="priority"
-            value={form.priority}
-            onChange={handleChange("priority")}
-          >
-            {priorityOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="form-group">
+            <label>Assign Technician (Optional)</label>
+            <select value={form.assignedTo} onChange={handleChange("assignedTo")}>
+                <option value="">Unassigned</option>
+                <option value="Tech Sarath">Tech Sarath</option>
+                <option value="Tech Nimal">Tech Nimal</option>
+                <option value="Tech Kamal">Tech Kamal</option>
+            </select>
+          </div>
+        </div>
 
-        {/*  IMAGE UPLOAD */}
-        <label htmlFor="images">
-          Upload Images (max 3)
-          <input
-            id="images"
-            type="file"
-            multiple
-            onChange={handleFileChange}
-          />
-        </label>
-
-        {/*  PREVIEW */}
-        {files.length > 0 && (
-          <div className="image-preview">
-            {files.map((file, index) => (
-              <p key={index}>{file.name}</p>
-            ))}
+        {ticket && (
+          <div className="form-group">
+             <label>Status</label>
+             <select value={form.status} onChange={handleChange("status")}>
+                <option value="OPEN">OPEN</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="CLOSED">CLOSED</option>
+             </select>
           </div>
         )}
 
-        {/* STATUS (EDIT MODE ONLY) */}
-        {ticket && (
-          <label htmlFor="status">
-            Status
-            <select
-              id="status"
-              name="status"
-              value={form.status}
-              onChange={handleChange("status")}
-            >
-              <option value="OPEN">OPEN</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="RESOLVED">RESOLVED</option>
-              <option value="CLOSED">CLOSED</option>
-            </select>
-          </label>
-        )}
-
-        {error && <div className="form-error">{error}</div>}
-
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={isSubmitDisabled}
-        >
-          {submitLabel}
-        </button>
+        <div className="form-actions pt-4">
+          <button
+            className="primary-button w-full"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting ? "Processing..." : (ticket ? "Update Ticket" : "Create Ticket")}
+          </button>
+        </div>
       </form>
     </section>
   );
 }
 
 TicketForm.propTypes = {
-  ticket: PropTypes.shape({
-    title: PropTypes.string,
-    description: PropTypes.string,
-    priority: PropTypes.string,
-    status: PropTypes.string,
-    location: PropTypes.string,
-    category: PropTypes.string,
-    contact: PropTypes.string
-  }),
+  ticket: PropTypes.object,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func
 };

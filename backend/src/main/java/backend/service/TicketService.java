@@ -22,6 +22,15 @@ public class TicketService {
     private TicketRepository ticketRepository;
 
     //  CREATE
+    public Ticket createTicketWithImage(Ticket ticket, MultipartFile imageFile) throws java.io.IOException {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            byte[] bytes = imageFile.getBytes();
+            String base64Image = java.util.Base64.getEncoder().encodeToString(bytes);
+            ticket.setImage(base64Image);
+        }
+        return createTicket(ticket);
+    }
+
     public Ticket createTicket(Ticket ticket) {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setCreatedAt(LocalDateTime.now());
@@ -44,22 +53,16 @@ public class TicketService {
     public Ticket updateTicket(String id, Ticket updated) {
         Ticket ticket = getTicketById(id);
 
-        ticket.setTitle(updated.getTitle());
-        ticket.setLocation(updated.getLocation());
-        ticket.setCategory(updated.getCategory());
-        ticket.setDescription(updated.getDescription());
-
-        if (updated.getStatus() != null)
-            ticket.setStatus(updated.getStatus());
-
-        if (updated.getPriority() != null)
-            ticket.setPriority(updated.getPriority());
-
-        if (updated.getAssignedTo() != null)
-            ticket.setAssignedTo(updated.getAssignedTo());
+        if (updated.getTitle() != null) ticket.setTitle(updated.getTitle());
+        if (updated.getLocation() != null) ticket.setLocation(updated.getLocation());
+        if (updated.getCategory() != null) ticket.setCategory(updated.getCategory());
+        if (updated.getDescription() != null) ticket.setDescription(updated.getDescription());
+        if (updated.getStatus() != null) ticket.setStatus(updated.getStatus());
+        if (updated.getPriority() != null) ticket.setPriority(updated.getPriority());
+        if (updated.getAssignedTo() != null) ticket.setAssignedTo(updated.getAssignedTo());
+        if (updated.getContact() != null) ticket.setContact(updated.getContact());
 
         ticket.setUpdatedAt(LocalDateTime.now());
-
         return ticketRepository.save(ticket);
     }
 

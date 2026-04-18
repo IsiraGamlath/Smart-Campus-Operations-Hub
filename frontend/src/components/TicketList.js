@@ -102,13 +102,13 @@ function TicketList({ tickets, onStatusTransition, onDelete, onEdit }) {
                 </button>
 
                 {/* EDIT */}
-                <button
+                <Link
+                  to={`/tickets/${ticket.id}`}
                   className="secondary-button"
-                  type="button"
-                  onClick={() => onEdit(ticket)}
+                  style={{ textDecoration: "none", display: "inline-block", textAlign: "center" }}
                 >
                   Edit
-                </button>
+                </Link>
 
                 {/* DELETE */}
                 <button

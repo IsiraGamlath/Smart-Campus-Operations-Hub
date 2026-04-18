@@ -19,6 +19,8 @@ public class TicketResponse {
     private String createdBy;
     private String assignedTo;
     private String resolutionNotes;
+    private String contact;
+    private String image;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -37,7 +39,17 @@ public class TicketResponse {
         response.resolutionNotes = ticket.getResolutionNotes();
         response.createdAt = ticket.getCreatedAt();
         response.updatedAt = ticket.getUpdatedAt();
+        response.contact = ticket.getContact();
+        response.image = ticket.getImage();
         return response;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public String getContact() {
+        return contact;
     }
 
     public String getId() {

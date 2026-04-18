@@ -27,46 +27,12 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const response = await getTickets(filters);
+      console.log('Fetched tickets:', response.data);
       setTickets(response.data);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
-      toast.error('Failed to load tickets');
-      // Mock data for demo if API fails
-      setTickets([
-        {
-          id: 'TKT-001',
-          title: 'Broken AC in Lab 1',
-          category: 'Electrical',
-          status: 'OPEN',
-          priority: 'HIGH',
-          location: 'Computer Lab 1',
-          createdAt: new Date().toISOString(),
-          commentsCount: 2,
-          imagesCount: 3
-        },
-        {
-          id: 'TKT-002',
-          title: 'Whiteboard markers missing',
-          category: 'Furniture',
-          status: 'IN_PROGRESS',
-          priority: 'LOW',
-          location: 'Lecture Hall A',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          commentsCount: 1,
-          imagesCount: 0
-        },
-        {
-          id: 'TKT-003',
-          title: 'Projector flickering',
-          category: 'IT',
-          status: 'RESOLVED',
-          priority: 'MEDIUM',
-          location: 'Seminar Room',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-          commentsCount: 5,
-          imagesCount: 1
-        }
-      ]);
+      console.error('CRITICAL: Dashboard fetch failed:', error);
+      toast.error('Could not connect to database');
+      setTickets([]);
     } finally {
       setLoading(false);
     }

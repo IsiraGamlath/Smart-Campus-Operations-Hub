@@ -27,41 +27,82 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
-    //  CREATE
-    @PostMapping
-    public ResponseEntity<TicketResponse> create(@Valid @RequestBody TicketRequest request) {
-        Ticket ticket = toTicket(request);
-        Ticket created = ticketService.createTicket(ticket);
+    //  CREATE (Updated for Multipart/Form-Data + Base64)
+    @PostMapping(consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<TicketResponse> create(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("priority") String priority,
+            @RequestParam(value = "contact", required = false) String contact,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "image", required = false) MultipartFile image) throws java.io.IOException {
+        
+        Ticket ticket = new Ticket();
+        ticket.setTitle(title);
+        ticket.setDescription(description);
+        ticket.setPriority(priority);
+        ticket.setContact(contact);
+        ticket.setLocation(location);
+        ticket.setCategory(category);
+        
+        Ticket created = ticketService.createTicketWithImage(ticket, image);
         return ResponseEntity.status(HttpStatus.CREATED).body(TicketResponse.from(created));
     }
 
-    //  GET ALL
+    //  GET COMMENTS BY TICKET ID (Requested fix)
+    @GetMapping("/comments/{ticketId}")
+    public ResponseEntity<List<backend.model.Comment>> getCommentsByTicketId(@PathVariable String ticketId) {
+        return ResponseEntity.ok(ticketService.getTicketById(ticketId).getComments());
+    }
+
+    //  GET ALL (Robust Connection Handling)
     @GetMapping
     public ResponseEntity<List<TicketResponse>> getAll() {
-        List<TicketResponse> list = ticketService.getAllTickets()
-                .stream()
-                .map(TicketResponse::from)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(list);
+        try {
+            List<TicketResponse> list = ticketService.getAllTickets()
+                    .stream()
+                    .map(TicketResponse::from)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            System.err.println("DB ERROR in getAll: " + e.getMessage());
+            // Return empty list instead of failing for stability
+            return ResponseEntity.ok(new java.util.ArrayList<>());
+        }
     }
 
     //  GET BY ID
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponse> getById(@PathVariable String id) {
-        return ResponseEntity.ok(TicketResponse.from(ticketService.getTicketById(id)));
+    public ResponseEntity<Object> getById(@PathVariable String id) {
+        try {
+            System.out.println("LOG [READ]: Fetching ticket details for ID: " + id);
+            return ResponseEntity.ok(TicketResponse.from(ticketService.getTicketById(id)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ticket not found or DB error: " + e.getMessage());
+        }
+    }
+
+    //  GET COMMENTS BY TICKET ID
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<backend.model.Comment>> getComments(@PathVariable String id) {
+        System.out.println("LOG [READ]: Fetching comments for ticket ID: " + id);
+        return ResponseEntity.ok(ticketService.getTicketById(id).getComments());
     }
 
     //  UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<TicketResponse> update(
+    public ResponseEntity<Object> update(
             @PathVariable String id,
             @Valid @RequestBody TicketRequest request) {
-
-        Ticket updated = toTicket(request);
-        return ResponseEntity.ok(
-                TicketResponse.from(ticketService.updateTicket(id, updated))
-        );
+        try {
+            Ticket updated = toTicket(request);
+            return ResponseEntity.ok(
+                    TicketResponse.from(ticketService.updateTicket(id, updated))
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Update failed: " + e.getMessage());
+        }
     }
 
     //  ADD COMMENT
@@ -126,6 +167,7 @@ public class TicketController {
         ticket.setPriority(request.getPriority());
         ticket.setAssignedTo(request.getAssignedTo());
         ticket.setResolutionNotes(request.getResolutionNotes());
+        ticket.setContact(request.getContact());
 
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             ticket.setStatus(TicketStatus.valueOf(request.getStatus().toUpperCase()));

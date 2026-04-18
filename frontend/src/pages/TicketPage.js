@@ -21,8 +21,10 @@ function TicketPage() {
 
     try {
       const response = await getTickets();
+      console.log("Loaded tickets:", response.data);
       setTickets(response.data || []);
-    } catch {
+    } catch (error) {
+      console.error("Error loading tickets:", error);
       setTickets([]);
       setError("Unable to load tickets. Please refresh the page.");
     } finally {
@@ -43,17 +45,20 @@ function TicketPage() {
     setError("");
 
     try {
+      let response;
       if (selectedTicket) {
-        await updateTicket(selectedTicket.id, ticket);
+        response = await updateTicket(selectedTicket.id, ticket);
         showMessage("Ticket updated successfully.");
       } else {
-        await createTicket(ticket);
+        response = await createTicket(ticket);
         showMessage("Ticket created successfully.");
       }
 
       setSelectedTicket(null);
       await loadTickets();
-    } catch {
+      return response;
+    } catch (error) {
+      console.error("Error saving ticket:", error);
       setError("Unable to save ticket. Please try again.");
     }
   };
@@ -65,7 +70,8 @@ function TicketPage() {
       await deleteTicket(ticketId);
       showMessage("Ticket removed successfully.");
       await loadTickets();
-    } catch {
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
       setError("Could not delete ticket. Please try again.");
     }
   };
@@ -78,9 +84,10 @@ function TicketPage() {
         ...ticket,
         status: "IN_PROGRESS"
       });
-      showMessage(`Ticket "${ticket.title}" is now In Progress.`);
+      showMessage(`Ticket "${ticket.title || 'Updated'}" is now In Progress.`);
       await loadTickets();
-    } catch {
+    } catch (error) {
+      console.error("Error updating status:", error);
       setError("Could not update ticket status.");
     }
   };
@@ -93,11 +100,13 @@ function TicketPage() {
   const sortedTickets = useMemo(() => {
     return [...tickets].sort((a, b) => {
       if (a.status === b.status) {
-        return a.title.localeCompare(b.title);
+        const titleA = a.title || "";
+        const titleB = b.title || "";
+        return titleA.localeCompare(titleB);
       }
       if (a.status === "OPEN") return -1;
       if (b.status === "OPEN") return 1;
-      return a.status.localeCompare(b.status);
+      return (a.status || "").localeCompare(b.status || "");
     });
   }, [tickets]);
 

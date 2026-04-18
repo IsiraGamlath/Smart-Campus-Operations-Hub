@@ -5,8 +5,7 @@ import {
   Upload, 
   X, 
   Send,
-  Info,
-  ChevronRight
+  Info
 } from 'lucide-react';
 import { createTicket, uploadTicketImages } from '../services/ticketService';
 import { Button, Input, Select, Textarea, Card } from '../components/ui';
@@ -17,11 +16,13 @@ const CreateTicket = () => {
   const fileInputRef = useRef(null);
   
   const [form, setForm] = useState({
+    title: '',
     location: '',
     category: '',
     description: '',
     priority: 'MEDIUM',
-    contact: ''
+    assignedTo: '',
+    resolutionNotes: ''
   });
   
   const [images, setImages] = useState([]);
@@ -49,28 +50,24 @@ const CreateTicket = () => {
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
     
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeImage = (index) => {
     const newImages = images.filter((_, i) => i !== index);
     const newPreviews = previews.filter((_, i) => i !== index);
-    
-    // Revoke URL to prevent memory leaks
     URL.revokeObjectURL(previews[index]);
-    
     setImages(newImages);
     setPreviews(newPreviews);
   };
 
   const validate = () => {
     const newErrors = {};
+    if (!form.title) newErrors.title = 'Title is required';
     if (!form.location) newErrors.location = 'Location is required';
     if (!form.category) newErrors.category = 'Category is required';
     if (!form.description || form.description.length < 10) 
       newErrors.description = 'Description must be at least 10 characters';
-    if (!form.contact) newErrors.contact = 'Contact details are required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -81,22 +78,29 @@ const CreateTicket = () => {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading('Creating your ticket...');
+    const loadingToast = toast.loading('Creating ticket...');
 
     try {
-      const response = await createTicket({
-        title: `${form.category} Issue at ${form.location}`,
-        ...form
-      });
-      
-      const ticketId = response.data?.id;
+      // 1. Prepare FormData
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("priority", form.priority);
+      formData.append("location", form.location);
+      formData.append("category", form.category);
+      formData.append("assignedTo", form.assignedTo);
+      formData.append("resolutionNotes", form.resolutionNotes);
+      formData.append("contact", form.assignedTo); // Map contact correctly if needed
 
-      if (images.length > 0 && ticketId) {
-        await uploadTicketImages(ticketId, images);
+      if (images.length > 0) {
+        formData.append("image", images[0]); // Send first image as requested singular field
       }
 
+      // 2. Create Ticket with Image in one step
+      await createTicket(formData);
+
       toast.success('Ticket created successfully!', { id: loadingToast });
-      navigate(`/tickets`);
+      navigate('/tickets');
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket', { id: loadingToast });
@@ -108,32 +112,34 @@ const CreateTicket = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <button 
-        onClick={() => navigate(-1)}
+        onClick={() => navigate('/tickets')}
         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors group mb-4"
       >
-        <div className="p-1.5 rounded-full bg-white border border-slate-200 group-hover:bg-slate-50 transition-colors">
-          <ArrowLeft size={16} />
-        </div>
+        <ArrowLeft size={16} />
         <span className="text-sm font-semibold">Back to Dashboard</span>
       </button>
 
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Create New Ticket</h1>
-          <p className="text-slate-500 mt-1">Report a maintenance issue or incident on campus.</p>
-        </div>
-        <div className="hidden sm:block">
-          <div className="px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-bold border border-primary-100 uppercase tracking-wider">
-            Step 1 of 1
-          </div>
+          <p className="text-slate-500 mt-1">Report a campus maintenance issue.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="p-6 sm:p-8 space-y-8 shadow-xl shadow-slate-200/50">
+        <Card className="p-8 space-y-8 shadow-xl">
+          <Input 
+            label="Incident Title *"
+            name="title"
+            value={form.title}
+            onChange={handleInputChange}
+            error={errors.title}
+            placeholder="e.g. Broken AC in Lab 1"
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label="Resource/Location"
+            <Select 
+              label="Location *"
               name="location"
               value={form.location}
               onChange={handleInputChange}
@@ -141,16 +147,14 @@ const CreateTicket = () => {
               options={[
                 { label: 'Select Location', value: '' },
                 { label: 'Computer Lab 1', value: 'Computer Lab 1' },
-                { label: 'Computer Lab 2', value: 'Computer Lab 2' },
                 { label: 'Lecture Hall A', value: 'Lecture Hall A' },
                 { label: 'Main Library', value: 'Main Library' },
-                { label: 'Campus Cafeteria', value: 'Campus Cafeteria' },
-                { label: 'Student Hostel', value: 'Student Hostel' },
+                { label: 'Cafeteria', value: 'Cafeteria' },
               ]}
             />
             
-            <Select
-              label="Issue Category"
+            <Select 
+              label="Category *"
               name="category"
               value={form.category}
               onChange={handleInputChange}
@@ -158,39 +162,36 @@ const CreateTicket = () => {
               options={[
                 { label: 'Select Category', value: '' },
                 { label: 'Electrical', value: 'Electrical' },
-                { label: 'IT & Network', value: 'IT' },
+                { label: 'IT', value: 'IT' },
                 { label: 'Furniture', value: 'Furniture' },
                 { label: 'Plumbing', value: 'Plumbing' },
-                { label: 'General Maintenance', value: 'General' },
               ]}
             />
           </div>
 
-          <Textarea
-            label="Problem Description"
+          <Textarea 
+            label="Problem Description *"
             name="description"
             rows={5}
             value={form.description}
             onChange={handleInputChange}
             error={errors.description}
-            placeholder="Please provide details about the issue..."
+            placeholder="Provide details..."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-8">
             <div className="space-y-4">
-              <label className="text-sm font-semibold text-slate-700 block">Priority Level</label>
+              <label className="text-sm font-semibold text-slate-700">Priority</label>
               <div className="flex gap-3">
                 {['LOW', 'MEDIUM', 'HIGH'].map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, priority: p }))}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border-2 ${
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border-2 transition-all ${
                       form.priority === p 
-                        ? p === 'HIGH' ? 'bg-red-50 border-red-500 text-red-700' :
-                          p === 'MEDIUM' ? 'bg-blue-50 border-blue-500 text-blue-700' :
-                          'bg-slate-50 border-slate-500 text-slate-700'
-                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700' 
+                        : 'border-slate-100 bg-white text-slate-400'
                     }`}
                   >
                     {p}
@@ -199,33 +200,33 @@ const CreateTicket = () => {
               </div>
             </div>
 
-            <Input
-              label="Contact Details (Email/Phone)"
-              name="contact"
-              value={form.contact}
+            <Select 
+              label="Assign Technician"
+              name="assignedTo"
+              value={form.assignedTo}
               onChange={handleInputChange}
-              error={errors.contact}
-              placeholder="How can we reach you?"
+              options={[
+                { label: 'Unassigned', value: '' },
+                { label: 'Tech Sarath', value: 'Tech Sarath' },
+                { label: 'Tech Nimal', value: 'Tech Nimal' },
+                { label: 'Tech Kamal', value: 'Tech Kamal' },
+              ]}
             />
           </div>
 
           {/* Image Upload */}
-          <div className="space-y-4 border-t border-slate-100 pt-8">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-slate-700">Attach Images (Optional)</label>
-              <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{previews.length} / 3</span>
-            </div>
-            
+          <div className="space-y-4 border-t pt-8">
+            <label className="text-sm font-semibold text-slate-700">Attachments (Max 3)</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {previews.map((src, index) => (
-                <div key={index} className="aspect-square relative rounded-xl overflow-hidden border border-slate-200 group shadow-sm">
+                <div key={index} className="aspect-square relative rounded-xl overflow-hidden border shadow-sm">
                   <img src={src} alt="Preview" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full shadow-lg"
                   >
-                    <X size={14} />
+                    <X size={12} />
                   </button>
                 </div>
               ))}
@@ -234,41 +235,28 @@ const CreateTicket = () => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-primary-400 hover:bg-primary-50 hover:text-primary-600 transition-all group scale-100 active:scale-95"
+                  className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-slate-400 hover:border-primary-400 hover:text-primary-600 transition-all"
                 >
-                  <Upload size={24} className="mb-2 group-hover:bounce" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Upload</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
+                  <Upload size={20} className="mb-1" />
+                  <span className="text-[10px] font-bold uppercase">Upload</span>
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
                 </button>
               )}
             </div>
-            
-            <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg text-blue-700 text-xs border border-blue-100">
-              <Info size={14} className="shrink-0" />
-              <p>Adding clear photos of the issue helps technicians resolve it faster.</p>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-blue-700 text-xs">
+              <Info size={14} />
+              <p>Images help technicians understand the issue quickly.</p>
             </div>
           </div>
         </Card>
 
         <div className="flex items-center justify-end gap-3 pt-4">
-          <Button type="button" variant="ghost" onClick={() => navigate(-1)} disabled={isSubmitting}>
+          <Button type="button" variant="ghost" onClick={() => navigate('/tickets')} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" className="gap-2 px-8" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>Sending...</>
-            ) : (
-              <>
-                <Send size={18} />
-                Submit Ticket
-              </>
+            {isSubmitting ? 'Processing...' : (
+              <><Send size={18} /> Submit Ticket</>
             )}
           </Button>
         </div>

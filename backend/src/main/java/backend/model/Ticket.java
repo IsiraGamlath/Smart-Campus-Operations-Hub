@@ -40,8 +40,18 @@ public class Ticket {
     private String resolutionNotes;
     private List<Comment> comments = new ArrayList<>();
 
+    private String contact;
+    private String image; // Base64 encoded image
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
 
     public Ticket() {
         this.status = TicketStatus.OPEN;
@@ -149,6 +159,14 @@ public class Ticket {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
     }
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
