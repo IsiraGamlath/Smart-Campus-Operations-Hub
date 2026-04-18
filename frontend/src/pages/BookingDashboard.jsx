@@ -32,6 +32,18 @@ function BookingDashboard() {
     fetchBookings();
   };
 
+  const handleApprove = (id) => {
+    console.log("approve", id);
+  };
+
+  const handleReject = (id) => {
+    console.log("reject", id);
+  };
+
+  const handleCancel = (id) => {
+    console.log("cancel", id);
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -50,7 +62,12 @@ function BookingDashboard() {
             <p className="text-sm text-slate-600">No bookings found</p>
           </div>
         ) : (
-          <BookingTable bookings={bookings} />
+          <BookingTable
+            bookings={bookings}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onCancel={handleCancel}
+          />
         )}
       </div>
     </main>
