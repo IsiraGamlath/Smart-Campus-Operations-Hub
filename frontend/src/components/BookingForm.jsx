@@ -33,6 +33,12 @@ function BookingForm({ onBookingCreated }) {
     event.preventDefault();
     setSuccessMessage("");
     setErrorMessage("");
+
+    if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
+      setErrorMessage("End time must be later than start time.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -163,6 +169,7 @@ function BookingForm({ onBookingCreated }) {
             id="endTime"
             name="endTime"
             type="time"
+            min={formData.startTime || undefined}
             value={formData.endTime}
             onChange={handleChange}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-slate-500"
