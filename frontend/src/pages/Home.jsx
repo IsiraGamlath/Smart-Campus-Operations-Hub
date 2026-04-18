@@ -124,25 +124,14 @@ export default function Home() {
             {/* Desktop nav */}
             <div className="hidden gap-8 md:flex">
               {NAV_LINKS.map((link) => (
-                link.to ? (
-                  <Link
-                    key={link.label}
-                    to={link.to}
-                    className="text-sm font-medium transition hover:text-slate-900"
-                    style={{ color: '#64748b' }}
-                  >
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    className="text-sm font-medium transition hover:text-slate-900"
-                    style={{ color: '#64748b' }}
-                  >
-                    {link.label}
-                  </a>
-                )
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className="text-sm font-medium transition hover:text-slate-900"
+                  style={{ color: '#64748b' }}
+                >
+                  {link.label}
+                </Link>
               ))}
             </div>
 

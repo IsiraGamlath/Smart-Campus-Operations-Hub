@@ -4,6 +4,16 @@ import { useAuth } from '../context/AuthContext';
 
 const GOOGLE_OAUTH_URL = 'http://localhost:8080/oauth2/authorization/google';
 
+function getDashboardPath(user) {
+  if (!user || !user.role) {
+     return '/dashboard';
+  }
+
+  return String(user.role).toUpperCase() === 'ADMIN'
+    ? '/admin-dashboard'
+    : '/dashboard';
+}
+
 function Login() {
   const { user, loading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -27,7 +37,7 @@ function Login() {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDashboardPath(user)} replace />;
   }
 
   return (

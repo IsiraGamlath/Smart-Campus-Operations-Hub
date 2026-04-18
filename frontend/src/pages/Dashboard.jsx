@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-function Dashboard() {
+function TicketPage() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -52,6 +52,9 @@ function Dashboard() {
               </Link>
               <Link to="/resources" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
                 Resources
+              </Link>
+              <Link to="/tickets" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
+                Tickets
               </Link>
             </div>
 
@@ -170,4 +173,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default TicketPage;
