@@ -15,6 +15,10 @@ function BookingForm({ onBookingCreated }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const today = new Date();
+  const minDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -112,6 +116,7 @@ function BookingForm({ onBookingCreated }) {
             id="date"
             name="date"
             type="date"
+            min={minDate}
             value={formData.date}
             onChange={handleChange}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-slate-500"
