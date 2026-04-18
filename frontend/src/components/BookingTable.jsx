@@ -1,25 +1,30 @@
 import StatusBadge from "./StatusBadge";
 
-function BookingTable({ bookings }) {
-  const renderActions = (status) => {
+function BookingTable({ bookings, onApprove, onReject, onCancel }) {
+  const renderActions = (booking) => {
+    const { id, status } = booking;
+
     if (status === "PENDING") {
       return (
         <div className="flex items-center gap-2">
           <button
             type="button"
             className="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-emerald-700"
+            onClick={() => onApprove(id)}
           >
             Approve
           </button>
           <button
             type="button"
             className="rounded-md bg-rose-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-rose-700"
+            onClick={() => onReject(id)}
           >
             Reject
           </button>
           <button
             type="button"
             className="rounded-md bg-slate-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-slate-700"
+            onClick={() => onCancel(id)}
           >
             Cancel
           </button>
@@ -32,6 +37,7 @@ function BookingTable({ bookings }) {
         <button
           type="button"
           className="rounded-md bg-slate-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-slate-700"
+          onClick={() => onCancel(id)}
         >
           Cancel
         </button>
@@ -78,7 +84,7 @@ function BookingTable({ bookings }) {
               <td className="whitespace-nowrap px-4 py-3 text-sm">
                 <StatusBadge status={booking.status} />
               </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm">{renderActions(booking.status)}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-sm">{renderActions(booking)}</td>
             </tr>
           ))}
         </tbody>
