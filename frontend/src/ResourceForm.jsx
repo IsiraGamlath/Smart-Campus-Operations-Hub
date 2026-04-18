@@ -124,20 +124,17 @@ function ResourceForm({
 
           <div className="flex flex-col gap-1">
             <label htmlFor="availabilityStart" className="text-sm font-medium text-slate-700">Availability Start</label>
-            <select
+            <input
               id="availabilityStart"
               name="availabilityStart"
+              type="time"
+              step="1800"
               value={formData.availabilityStart}
               onChange={onInputChange}
               onBlur={onFieldBlur}
               className={getInputClass('availabilityStart')}
               aria-invalid={Boolean(getFieldError('availabilityStart'))}
-            >
-              <option value="">Select start time</option>
-              {availabilityStartOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            />
             {getFieldError('availabilityStart') && (
               <p className="mt-1 text-xs text-red-600">{getFieldError('availabilityStart')}</p>
             )}
@@ -145,20 +142,17 @@ function ResourceForm({
 
           <div className="flex flex-col gap-1">
             <label htmlFor="availabilityEnd" className="text-sm font-medium text-slate-700">Availability End</label>
-            <select
+            <input
               id="availabilityEnd"
               name="availabilityEnd"
+              type="time"
+              step="1800"
               value={formData.availabilityEnd}
               onChange={onInputChange}
               onBlur={onFieldBlur}
               className={getInputClass('availabilityEnd')}
               aria-invalid={Boolean(getFieldError('availabilityEnd'))}
-            >
-              <option value="">Select end time</option>
-              {availabilityEndOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            />
             {getFieldError('availabilityEnd') && (
               <p className="mt-1 text-xs text-red-600">{getFieldError('availabilityEnd')}</p>
             )}

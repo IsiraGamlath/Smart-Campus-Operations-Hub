@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import backend.entity.Resource;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"})
 @RequestMapping("/api/resources")
 public class ResourceController {
 
