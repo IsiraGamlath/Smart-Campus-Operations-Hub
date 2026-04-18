@@ -50,6 +50,9 @@ function Dashboard() {
               <Link to="/" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
                 Home
               </Link>
+              <Link to="/resources" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
+                Resources
+              </Link>
             </div>
 
             {/* Auth Button */}

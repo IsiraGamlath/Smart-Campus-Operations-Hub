@@ -4,8 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 // Data structures
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Workflow', href: '#workflow' },
+  { label: 'Resources', to: '/resources' },
   { label: 'Bookings', href: '#bookings' },
   { label: 'Tickets', href: '#tickets' },
 ];
@@ -125,14 +124,25 @@ export default function Home() {
             {/* Desktop nav */}
             <div className="hidden gap-8 md:flex">
               {NAV_LINKS.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm font-medium transition hover:text-slate-900"
-                  style={{ color: '#64748b' }}
-                >
-                  {link.label}
-                </a>
+                link.to ? (
+                  <Link
+                    key={link.label}
+                    to={link.to}
+                    className="text-sm font-medium transition hover:text-slate-900"
+                    style={{ color: '#64748b' }}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className="text-sm font-medium transition hover:text-slate-900"
+                    style={{ color: '#64748b' }}
+                  >
+                    {link.label}
+                  </a>
+                )
               ))}
             </div>
 
@@ -167,14 +177,25 @@ export default function Home() {
           {menuOpen && (
             <div className="mt-4 space-y-2 border-t" style={{ borderColor: '#e2e8f0', paddingTop: '1rem' }}>
               {NAV_LINKS.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="block text-sm font-medium"
-                  style={{ color: '#64748b' }}
-                >
-                  {link.label}
-                </a>
+                link.to ? (
+                  <Link
+                    key={link.label}
+                    to={link.to}
+                    className="block text-sm font-medium"
+                    style={{ color: '#64748b' }}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className="block text-sm font-medium"
+                    style={{ color: '#64748b' }}
+                  >
+                    {link.label}
+                  </a>
+                )
               ))}
             </div>
           )}
