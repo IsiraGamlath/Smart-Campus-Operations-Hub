@@ -36,53 +36,69 @@ public class TicketService {
 
     //  GET BY ID
     public Ticket getTicketById(String id) {
-        return ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+        return ticketRepository.findById(id)
+                .orElseThrow(() -> new TicketNotFoundException(id));
     }
 
     //  UPDATE
-    public Ticket updateTicket(String id, Ticket updatedTicket) {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+    public Ticket updateTicket(String id, Ticket updated) {
+        Ticket ticket = getTicketById(id);
 
-        ticket.setLocation(updatedTicket.getLocation());
-        ticket.setCategory(updatedTicket.getCategory());
-        ticket.setDescription(updatedTicket.getDescription());
+        ticket.setTitle(updated.getTitle());
+        ticket.setLocation(updated.getLocation());
+        ticket.setCategory(updated.getCategory());
+        ticket.setDescription(updated.getDescription());
 
-        if (updatedTicket.getStatus() != null) {
-            ticket.setStatus(updatedTicket.getStatus());
-        }
-        if (updatedTicket.getPriority() != null) {
-            ticket.setPriority(updatedTicket.getPriority());
-        }
-        if (updatedTicket.getAssignedTo() != null) {
-            ticket.setAssignedTo(updatedTicket.getAssignedTo());
-        }
-        if (updatedTicket.getResolutionNotes() != null) {
-            ticket.setResolutionNotes(updatedTicket.getResolutionNotes());
-        }
+        if (updated.getStatus() != null)
+            ticket.setStatus(updated.getStatus());
+
+        if (updated.getPriority() != null)
+            ticket.setPriority(updated.getPriority());
+
+        if (updated.getAssignedTo() != null)
+            ticket.setAssignedTo(updated.getAssignedTo());
 
         ticket.setUpdatedAt(LocalDateTime.now());
 
         return ticketRepository.save(ticket);
     }
 
-    //  ADD COMMENT
-    public Ticket addComment(String id, String commentText) {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+    // ADD COMMENT
+    public Ticket addComment(String id, String text) {
+        Ticket ticket = getTicketById(id);
 
         if (ticket.getComments() == null) {
             ticket.setComments(new ArrayList<>());
         }
 
-        Comment comment = new Comment(id, "Admin", commentText, LocalDateTime.now());
+        Comment comment = new Comment(
+                java.util.UUID.randomUUID().toString(),
+                "Admin",
+                text,
+                LocalDateTime.now()
+        );
+
         ticket.getComments().add(comment);
         ticket.setUpdatedAt(LocalDateTime.now());
 
         return ticketRepository.save(ticket);
     }
 
-    //  IMAGE UPLOAD (NEW)
+    //  DELETE COMMENT
+    public Ticket deleteComment(String id, String commentId) {
+        Ticket ticket = getTicketById(id);
+
+        if (ticket.getComments() != null) {
+            ticket.getComments().removeIf(c -> c.getId().equals(commentId));
+        }
+
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return ticketRepository.save(ticket);
+    }
+
+    //  IMAGE UPLOAD
     public Ticket uploadImages(String id, MultipartFile[] files) throws Exception {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+        Ticket ticket = getTicketById(id);
 
         if (ticket.getImages() == null) {
             ticket.setImages(new ArrayList<>());
@@ -90,33 +106,29 @@ public class TicketService {
 
         for (MultipartFile file : files) {
 
-            //  limit to 3 images
             if (ticket.getImages().size() >= 3) break;
 
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-
             String uploadDir = "uploads/";
-            File uploadPath = new File(uploadDir);
 
-            if (!uploadPath.exists()) {
-                uploadPath.mkdirs();
-            }
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
 
             file.transferTo(new File(uploadDir + fileName));
 
-            // save URL
-            ticket.getImages().add("http://localhost:8081/uploads/" + fileName);
+            ticket.getImages().add("http://localhost:8091/uploads/" + fileName);
         }
 
         ticket.setUpdatedAt(LocalDateTime.now());
         return ticketRepository.save(ticket);
     }
 
-    public Ticket deleteImage(String id, String imageUrl) {
-        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new TicketNotFoundException(id));
+    //  DELETE IMAGE
+    public Ticket deleteImage(String id, String url) {
+        Ticket ticket = getTicketById(id);
 
         if (ticket.getImages() != null) {
-            ticket.getImages().removeIf(url -> url.equals(imageUrl));
+            ticket.getImages().removeIf(img -> img.equals(url));
         }
 
         ticket.setUpdatedAt(LocalDateTime.now());

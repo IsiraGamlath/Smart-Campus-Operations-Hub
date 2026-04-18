@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 
 public class TicketRequest {
 
+    @NotBlank(message = "Title is required")
+    private String title;
+
     @NotBlank(message = "Location is required")
     private String location;
 
@@ -19,6 +22,14 @@ public class TicketRequest {
     private String status;
     private String assignedTo;
     private String resolutionNotes;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
     public String getLocation() {
         return location;

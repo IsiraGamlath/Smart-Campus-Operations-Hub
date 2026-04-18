@@ -9,6 +9,7 @@ import java.util.List;
 public class TicketResponse {
 
     private String id;
+    private String title;
     private String location;
     private String category;
     private String description;
@@ -24,6 +25,7 @@ public class TicketResponse {
     public static TicketResponse from(Ticket ticket) {
         TicketResponse response = new TicketResponse();
         response.id = ticket.getId();
+        response.title = ticket.getTitle();
         response.location = ticket.getLocation();
         response.category = ticket.getCategory();
         response.description = ticket.getDescription();
@@ -40,6 +42,9 @@ public class TicketResponse {
 
     public String getId() {
         return id;
+    }
+    public String getTitle() {
+        return title;
     }
     public String getLocation() {
         return location;

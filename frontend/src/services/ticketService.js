@@ -1,48 +1,56 @@
-import axios from 'axios';
+import axios from "axios";
 
-const MOCK_USER = {
-  id: "user1",
-  role: "ADMIN"
-};
+const API = "http://localhost:8091/api/tickets";
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API,
   headers: {
-    'Content-Type': 'application/json',
-    userId: MOCK_USER.id,
-    role: MOCK_USER.role
-  },
+    "Content-Type": "application/json"
+  }
 });
 
-export const getTickets = (params) => api.get('/tickets', { params });
+//  GET ALL
+export const getTickets = () => api.get("");
 
-export const getTicketById = (id) => api.get(`/tickets/${id}`);
+//  GET BY ID
+export const getTicketById = (id) => api.get(`/${id}`);
 
-export const createTicket = (ticketData) => api.post('/tickets', ticketData);
+//  CREATE
+export const createTicket = (data) => api.post("", data);
 
-export const updateTicket = (id, ticketData) => api.put(`/tickets/${id}`, ticketData);
+//  UPDATE
+export const updateTicket = (id, data) => api.put(`/${id}`, data);
 
-export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
+//  DELETE
+export const deleteTicket = (id) => api.delete(`/${id}`);
 
-export const uploadTicketImages = (ticketId, files) => {
+//  ADD COMMENT
+export const addComment = (id, text) =>
+  api.post(`/${id}/comments`, { text });
+
+//  DELETE COMMENT
+export const deleteComment = (id, commentId) =>
+  api.delete(`/${id}/comments/${commentId}`);
+
+//  UPLOAD IMAGES
+export const uploadTicketImages = (id, files) => {
   const formData = new FormData();
+
   for (let i = 0; i < files.length; i++) {
-    formData.append('files', files[i]);
+    formData.append("files", files[i]);
   }
-  return api.post(`/tickets/${ticketId}/upload`, formData, {
+
+  return api.post(`/${id}/upload`, formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+      "Content-Type": "multipart/form-data"
+    }
   });
 };
 
-export const addComment = (ticketId, text) => 
-  api.post(`/tickets/${ticketId}/comments`, { text });
-
-export const deleteComment = (ticketId, commentId) =>
-  api.delete(`/tickets/${ticketId}/comments/${commentId}`);
-
-export const deleteImage = (ticketId, url) =>
-  api.delete(`/tickets/${ticketId}/image`, { params: { url } });
+// DELETE IMAGE
+export const deleteImage = (id, url) =>
+  api.delete(`/${id}/image`, {
+    params: { url }
+  });
 
 export default api;
