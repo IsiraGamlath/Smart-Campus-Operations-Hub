@@ -1,74 +1,17 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import UserNavbar from '../components/UserNavbar';
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { user, setUser } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (isLoggingOut) {
-      return;
-    }
-
-    setIsLoggingOut(true);
-
-    try {
-      await fetch('http://localhost:8080/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch {
-      // Ignore network errors here and still clear local auth state.
-    } finally {
-      setUser(null);
-      navigate('/', { replace: true });
-    }
-  };
+  const { user } = useAuth();
 
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'Inter', sans-serif", background: '#fafafa' }}>
-      {/* ===== NAVBAR ===== */}
-      <nav className="sticky top-0 z-40 border-b" style={{ borderColor: '#e2e8f0', background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(8px)' }}>
-        <div className="mx-auto max-w-6xl px-6 py-4 sm:px-8">
-          <div className="flex items-center justify-between">
-            {/* Logo & Brand */}
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white">
-                SC
-              </div>
-              <span className="text-sm font-semibold" style={{ color: '#111827' }}>Smart Campus</span>
-            </div>
-
-            {/* Nav Links */}
-            <div className="hidden items-center gap-6 md:flex">
-              <Link to="/" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
-                Home
-              </Link>
-              <Link to="/resources" className="text-sm font-medium transition" style={{ color: '#64748b' }}>
-                Resources
-              </Link>
-            </div>
-
-            {/* Auth Button */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-80"
-              >
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen" style={{ background: '#fafafa' }}>
+      <UserNavbar />
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-8">
@@ -82,17 +25,29 @@ function Dashboard() {
             <p className="mt-4 max-w-3xl text-lg" style={{ color: '#475569' }}>
               Manage your resources, bookings, incident tickets, and notifications from one secure workspace.
             </p>
-            {user?.role === 'ADMIN' && (
-              <div className="mt-6">
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                to="/bookings"
+                className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                My Bookings
+              </Link>
+              <Link
+                to="/resources"
+                className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Resources
+              </Link>
+              {user?.role === 'ADMIN' && (
                 <Link
                   to="/admin-dashboard"
                   className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   Admin Dashboard
                 </Link>
-              </div>
-            )}
-            <div className="mt-6 flex flex-wrap gap-2">
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
               <span
                 className="inline-block rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase"
                 style={{ background: '#f1f5f9', color: '#64748b' }}

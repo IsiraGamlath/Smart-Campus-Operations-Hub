@@ -11,7 +11,7 @@ public interface BookingService {
 
 	List<Booking> getMyBookings(String userId);
 
-	Booking createBooking(BookingRequest request);
+	Booking createBooking(BookingRequest request, String userId);
 
 	Booking approveBooking(String id);
 

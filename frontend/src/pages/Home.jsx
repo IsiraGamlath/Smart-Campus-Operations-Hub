@@ -127,7 +127,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'Inter', sans-serif", background: '#fafafa' }}>
+    <div className="min-h-screen" style={{ background: '#fafafa' }}>
       {/* ===== NAVBAR ===== */}
       <nav className="sticky top-0 z-40 border-b" style={{ borderColor: '#e2e8f0', background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(8px)' }}>
         <div className="mx-auto max-w-6xl px-6 py-4 sm:px-8">
@@ -412,7 +412,6 @@ export default function Home() {
       </footer>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
       `}</style>

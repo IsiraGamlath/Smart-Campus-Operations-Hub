@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import UserNavbar from './components/UserNavbar';
 import DeleteResourceModal from './DeleteResourceModal.jsx';
 import EditResourceModal from './EditResourceModal.jsx';
 import ResourceFilter from './ResourceFilter.jsx';
@@ -430,26 +431,28 @@ function ResourcePage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-              Facilities &amp; Assets Catalogue
-            </h1>
-            <p className="mt-2 text-sm text-slate-600 sm:text-base">
-              Module A - Facilities &amp; Assets Catalogue: View and monitor campus resources such as
-              rooms, labs, and shared spaces.
-            </p>
+    <>
+      <UserNavbar />
+      <main className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+                Facilities &amp; Assets Catalogue
+              </h1>
+              <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                Module A - Facilities &amp; Assets Catalogue: View and monitor campus resources such as
+                rooms, labs, and shared spaces.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleGoBack}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              Back
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleGoBack}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            Back
-          </button>
-        </div>
 
         {submitMessage && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -513,35 +516,36 @@ function ResourcePage() {
         </section>
       </div>
 
-      {isAdmin && (
-        <>
-          <EditResourceModal
-            isOpen={isEditModalOpen}
-            formData={editFormData}
-            formErrors={editFormErrors}
-            touchedFields={editTouchedFields}
-            hasSubmitted={editHasSubmitted}
-            onInputChange={handleEditInputChange}
-            onFieldBlur={handleEditFieldBlur}
-            onSubmit={handleUpdateSubmit}
-            onCancel={closeEditModal}
-            submitting={editSubmitting}
-            typeOptions={typeOptions}
-            locationOptions={locationOptions}
-            availabilityStartOptions={availabilityStartOptions}
-            availabilityEndOptions={availabilityEndOptions}
-            statusOptions={statusOptions}
-          />
+        {isAdmin && (
+          <>
+            <EditResourceModal
+              isOpen={isEditModalOpen}
+              formData={editFormData}
+              formErrors={editFormErrors}
+              touchedFields={editTouchedFields}
+              hasSubmitted={editHasSubmitted}
+              onInputChange={handleEditInputChange}
+              onFieldBlur={handleEditFieldBlur}
+              onSubmit={handleUpdateSubmit}
+              onCancel={closeEditModal}
+              submitting={editSubmitting}
+              typeOptions={typeOptions}
+              locationOptions={locationOptions}
+              availabilityStartOptions={availabilityStartOptions}
+              availabilityEndOptions={availabilityEndOptions}
+              statusOptions={statusOptions}
+            />
 
-          <DeleteResourceModal
-            isOpen={Boolean(pendingDeleteResource)}
-            onCancel={closeDeleteModal}
-            onConfirm={confirmDeleteResource}
-            deletingResourceId={deletingResourceId}
-          />
-        </>
-      )}
-    </main>
+            <DeleteResourceModal
+              isOpen={Boolean(pendingDeleteResource)}
+              onCancel={closeDeleteModal}
+              onConfirm={confirmDeleteResource}
+              deletingResourceId={deletingResourceId}
+            />
+          </>
+        )}
+      </main>
+    </>
   );
 }
 

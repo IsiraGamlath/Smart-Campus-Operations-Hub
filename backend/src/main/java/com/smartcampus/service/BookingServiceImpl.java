@@ -23,10 +23,15 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
+    private final NotificationsService notificationsService;
 
-    public BookingServiceImpl(BookingRepository bookingRepository, ResourceRepository resourceRepository) {
+    public BookingServiceImpl(
+            BookingRepository bookingRepository,
+            ResourceRepository resourceRepository,
+            NotificationsService notificationsService) {
         this.bookingRepository = bookingRepository;
         this.resourceRepository = resourceRepository;
+        this.notificationsService = notificationsService;
     }
 
     @Override
@@ -40,8 +45,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public Booking createBooking(BookingRequest request) {
+    public Booking createBooking(BookingRequest request, String userId) {
         validateTimeRange(request);
+
+        if (userId == null || userId.isBlank()) {
+            throw new BadRequestException("User identity is required");
+        }
 
         Resource resource = resourceRepository.findById(request.getResourceId())
             .orElseThrow(() -> new ResourceNotFoundException(
@@ -60,7 +69,7 @@ public class BookingServiceImpl implements BookingService {
         LocalDateTime now = LocalDateTime.now();
 
         Booking booking = new Booking();
-        booking.setUserId(request.getUserId());
+        booking.setUserId(userId);
         booking.setResourceId(request.getResourceId());
         booking.setDate(request.getDate());
         booking.setStartTime(request.getStartTime());
@@ -103,6 +112,10 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
         Booking approvedBooking = bookingRepository.save(booking);
 
+        notificationsService.createNotification(
+            approvedBooking.getUserId(),
+            "Booking approved: " + formatBookingSummary(approvedBooking));
+
         autoRejectConflictingPendingBookings(approvedBooking);
 
         return approvedBooking;
@@ -125,7 +138,13 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(request.getReason());
         booking.setUpdatedAt(LocalDateTime.now());
-        return bookingRepository.save(booking);
+        Booking rejectedBooking = bookingRepository.save(booking);
+
+        notificationsService.createNotification(
+            rejectedBooking.getUserId(),
+            buildRejectionMessage(rejectedBooking));
+
+        return rejectedBooking;
     }
 
     @Override
@@ -245,6 +264,27 @@ public class BookingServiceImpl implements BookingService {
 
         if (!toReject.isEmpty()) {
             bookingRepository.saveAll(toReject);
+            for (Booking rejected : toReject) {
+                notificationsService.createNotification(
+                        rejected.getUserId(),
+                        "Booking auto-rejected: " + formatBookingSummary(rejected)
+                                + ". Reason: Time conflict with an approved booking.");
+            }
         }
+    }
+
+    private String formatBookingSummary(Booking booking) {
+        return "Resource " + booking.getResourceId()
+                + " on " + booking.getDate()
+                + " (" + booking.getStartTime() + "-" + booking.getEndTime() + ")";
+    }
+
+    private String buildRejectionMessage(Booking booking) {
+        String summary = formatBookingSummary(booking);
+        String reason = booking.getRejectionReason();
+        if (reason == null || reason.isBlank()) {
+            return "Booking rejected: " + summary;
+        }
+        return "Booking rejected: " + summary + ". Reason: " + reason.trim();
     }
 }
