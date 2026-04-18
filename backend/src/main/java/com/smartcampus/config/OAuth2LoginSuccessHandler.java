@@ -49,6 +49,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         User user = userRepository.findByEmail(email)
             .orElseGet(() -> userRepository.save(new User(null, resolvedName, email, Role.USER)));
 
+        String redirectUrl = user.getRole() == Role.ADMIN
+                ? "http://localhost:3000/admin-dashboard"
+                : "http://localhost:3000/dashboard";
+
         String body = "{"
                 + "\"message\":\"OAuth2 login successful\","
                 + "\"name\":\"" + escapeJson(resolvedName) + "\","
@@ -59,7 +63,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.sendRedirect("http://localhost:3000/dashboard");
+        response.sendRedirect(redirectUrl);
         response.getWriter().flush();
     }
 

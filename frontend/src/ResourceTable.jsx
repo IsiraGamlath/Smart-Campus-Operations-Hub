@@ -60,6 +60,8 @@ function ResourceTable({
   isBookable,
   deletingResourceId,
   actionBusy,
+  showBookAction = false,
+  showManageActions = true,
 }) {
   if (loading) {
     return (
@@ -107,7 +109,7 @@ function ResourceTable({
           <tbody className="divide-y divide-gray-200">
             {resources.map((resource, index) => {
               const resourceId = getResourceId(resource);
-              const bookable = isBookable(resource.status);
+              const bookable = isBookable ? isBookable(resource.status) : false;
               const editDisabled = !resourceId || actionBusy || Boolean(deletingResourceId);
               const deleteDisabled = !resourceId || actionBusy || deletingResourceId === resourceId;
               const bookDisabled = !resourceId || actionBusy || Boolean(deletingResourceId) || !bookable;
@@ -115,9 +117,7 @@ function ResourceTable({
               return (
                 <tr
                   key={resourceId || index}
-                  className={
-                    'transition hover:bg-gray-50 ' + (bookable ? '' : 'bg-gray-50/40')
-                  }
+                  className="transition hover:bg-gray-50"
                 >
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.name || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.type || '-'}</td>
@@ -128,27 +128,30 @@ function ResourceTable({
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.availabilityEnd || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">
                     {getStatusBadge(resource.status)}
-                    {!bookable && (
+                    {showBookAction && !bookable && (
                       <p className="mt-1 text-xs text-slate-500">Not available for booking</p>
                     )}
                   </td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.description || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700 whitespace-nowrap">
                     <div className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => onBook(resource)}
-                        className={
-                          bookDisabled
-                            ? 'shrink-0 whitespace-nowrap rounded-xl bg-emerald-300 px-3 py-1.5 text-xs font-semibold text-white shadow-sm cursor-not-allowed transition duration-200'
-                            : 'shrink-0 whitespace-nowrap rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-400'
-                        }
-                        disabled={bookDisabled}
-                        title={bookable ? 'Book this resource' : 'Booking disabled for current status'}
-                      >
-                        Book
-                      </button>
+                      {showBookAction && (
+                        <button
+                          type="button"
+                          onClick={() => onBook(resource)}
+                          className={
+                            bookDisabled
+                              ? 'shrink-0 whitespace-nowrap rounded-xl bg-emerald-300 px-3 py-1.5 text-xs font-semibold text-white shadow-sm cursor-not-allowed transition duration-200'
+                              : 'shrink-0 whitespace-nowrap rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                          }
+                          disabled={bookDisabled}
+                          title={bookable ? 'Book this resource' : 'Booking disabled for current status'}
+                        >
+                          Book
+                        </button>
+                      )}
 
+                      {showManageActions && (
                       <button
                         type="button"
                         onClick={() => onEdit(resource)}
@@ -161,7 +164,9 @@ function ResourceTable({
                       >
                         Edit
                       </button>
+                      )}
 
+                      {showManageActions && (
                       <button
                         type="button"
                         onClick={() => onRequestDelete(resource)}
@@ -174,6 +179,7 @@ function ResourceTable({
                       >
                         {deletingResourceId === resourceId ? 'Deleting...' : 'Delete'}
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>

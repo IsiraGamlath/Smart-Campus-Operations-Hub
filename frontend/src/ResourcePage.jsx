@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import DeleteResourceModal from './DeleteResourceModal.jsx';
 import EditResourceModal from './EditResourceModal.jsx';
 import ResourceFilter from './ResourceFilter.jsx';
@@ -37,6 +39,10 @@ import {
 } from './resourceService';
 
 function ResourcePage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -333,13 +339,12 @@ function ResourcePage() {
   };
 
   const handleBookResource = (resource) => {
-    if (!isBookable(resource.status)) {
+    const resourceId = getResourceId(resource);
+    if (!resourceId || !isBookable(resource.status)) {
       return;
     }
 
-    const resourceName = (resource.name || 'Selected resource').trim();
-    setSubmitError('');
-    setSubmitMessage(resourceName + ' is available for booking.');
+    navigate('/bookings?resourceId=' + encodeURIComponent(resourceId));
   };
 
   const handleFilterInputChange = (event) => {
@@ -445,24 +450,26 @@ function ResourcePage() {
           </div>
         )}
 
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-md">
-          <ResourceForm
-            mode="add"
-            formData={addFormData}
-            formErrors={addFormErrors}
-            touchedFields={addTouchedFields}
-            hasSubmitted={addHasSubmitted}
-            onInputChange={handleAddInputChange}
-            onFieldBlur={handleAddFieldBlur}
-            onSubmit={handleAddSubmit}
-            submitting={addSubmitting}
-            typeOptions={typeOptions}
-            locationOptions={locationOptions}
-            availabilityStartOptions={availabilityStartOptions}
-            availabilityEndOptions={availabilityEndOptions}
-            statusOptions={statusOptions}
-          />
-        </section>
+        {isAdmin && (
+          <section className="mb-6 rounded-2xl bg-white p-6 shadow-md">
+            <ResourceForm
+              mode="add"
+              formData={addFormData}
+              formErrors={addFormErrors}
+              touchedFields={addTouchedFields}
+              hasSubmitted={addHasSubmitted}
+              onInputChange={handleAddInputChange}
+              onFieldBlur={handleAddFieldBlur}
+              onSubmit={handleAddSubmit}
+              submitting={addSubmitting}
+              typeOptions={typeOptions}
+              locationOptions={locationOptions}
+              availabilityStartOptions={availabilityStartOptions}
+              availabilityEndOptions={availabilityEndOptions}
+              statusOptions={statusOptions}
+            />
+          </section>
+        )}
 
         <ResourceFilter
           filterData={filterData}
@@ -487,34 +494,40 @@ function ResourcePage() {
             isBookable={isBookable}
             deletingResourceId={deletingResourceId}
             actionBusy={actionBusy}
+            showBookAction={!isAdmin}
+            showManageActions={isAdmin}
           />
         </section>
       </div>
 
-      <EditResourceModal
-        isOpen={isEditModalOpen}
-        formData={editFormData}
-        formErrors={editFormErrors}
-        touchedFields={editTouchedFields}
-        hasSubmitted={editHasSubmitted}
-        onInputChange={handleEditInputChange}
-        onFieldBlur={handleEditFieldBlur}
-        onSubmit={handleUpdateSubmit}
-        onCancel={closeEditModal}
-        submitting={editSubmitting}
-        typeOptions={typeOptions}
-        locationOptions={locationOptions}
-        availabilityStartOptions={availabilityStartOptions}
-        availabilityEndOptions={availabilityEndOptions}
-        statusOptions={statusOptions}
-      />
+      {isAdmin && (
+        <>
+          <EditResourceModal
+            isOpen={isEditModalOpen}
+            formData={editFormData}
+            formErrors={editFormErrors}
+            touchedFields={editTouchedFields}
+            hasSubmitted={editHasSubmitted}
+            onInputChange={handleEditInputChange}
+            onFieldBlur={handleEditFieldBlur}
+            onSubmit={handleUpdateSubmit}
+            onCancel={closeEditModal}
+            submitting={editSubmitting}
+            typeOptions={typeOptions}
+            locationOptions={locationOptions}
+            availabilityStartOptions={availabilityStartOptions}
+            availabilityEndOptions={availabilityEndOptions}
+            statusOptions={statusOptions}
+          />
 
-      <DeleteResourceModal
-        isOpen={Boolean(pendingDeleteResource)}
-        onCancel={closeDeleteModal}
-        onConfirm={confirmDeleteResource}
-        deletingResourceId={deletingResourceId}
-      />
+          <DeleteResourceModal
+            isOpen={Boolean(pendingDeleteResource)}
+            onCancel={closeDeleteModal}
+            onConfirm={confirmDeleteResource}
+            deletingResourceId={deletingResourceId}
+          />
+        </>
+      )}
     </div>
   );
 }

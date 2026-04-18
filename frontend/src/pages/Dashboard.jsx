@@ -82,6 +82,16 @@ function Dashboard() {
             <p className="mt-4 max-w-3xl text-lg" style={{ color: '#475569' }}>
               Manage your resources, bookings, incident tickets, and notifications from one secure workspace.
             </p>
+            {user?.role === 'ADMIN' && (
+              <div className="mt-6">
+                <Link
+                  to="/admin-dashboard"
+                  className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Admin Dashboard
+                </Link>
+              </div>
+            )}
             <div className="mt-6 flex flex-wrap gap-2">
               <span
                 className="inline-block rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase"

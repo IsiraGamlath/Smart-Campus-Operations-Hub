@@ -38,6 +38,18 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    if (request.getRequestURI() != null && request.getRequestURI().startsWith("/api/")) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                        return;
+                    }
+
+                    response.sendRedirect("/oauth2/authorization/google");
+                })
+            )
             .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2LoginSuccessHandler))
             .logout(logout -> logout
                 .logoutUrl("/logout")

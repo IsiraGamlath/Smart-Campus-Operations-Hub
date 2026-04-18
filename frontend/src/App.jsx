@@ -3,8 +3,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import BookingDashboard from './pages/BookingDashboard';
 import ResourcePage from './ResourcePage.jsx';
 
 function App() {
@@ -28,10 +30,28 @@ function App() {
           />
 
           <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/resources"
             element={
               <ProtectedRoute>
                 <ResourcePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/bookings"
+            element={
+              <ProtectedRoute>
+                <BookingDashboard />
               </ProtectedRoute>
             }
           />
