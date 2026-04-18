@@ -32,16 +32,68 @@ function BookingDashboard() {
     fetchBookings();
   };
 
-  const handleApprove = (id) => {
-    console.log("approve", id);
+  const handleApprove = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/bookings/${id}/approve`, {
+        method: "PUT",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to approve booking");
+      }
+
+      setLoading(true);
+      fetchBookings();
+    } catch (error) {
+      console.error("Approve error:", error);
+      window.alert("Unable to approve booking. Please try again.");
+    }
   };
 
-  const handleReject = (id) => {
-    console.log("reject", id);
+  const handleReject = async (id) => {
+    const reason = window.prompt("Enter rejection reason:");
+
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/bookings/${id}/reject`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reject booking");
+      }
+
+      setLoading(true);
+      fetchBookings();
+    } catch (error) {
+      console.error("Reject error:", error);
+      window.alert("Unable to reject booking. Please try again.");
+    }
   };
 
-  const handleCancel = (id) => {
-    console.log("cancel", id);
+  const handleCancel = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/bookings/${id}/cancel`, {
+        method: "PUT",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to cancel booking");
+      }
+
+      setLoading(true);
+      fetchBookings();
+    } catch (error) {
+      console.error("Cancel error:", error);
+      window.alert("Unable to cancel booking. Please try again.");
+    }
   };
 
   return (
