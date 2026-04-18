@@ -29,6 +29,8 @@ public class Resource {
     @NotBlank(message = "Resource location is required")
     private String location;
 
+    private String bookingDate;
+
     private String availabilityStart;
 
     private String availabilityEnd;
@@ -80,6 +82,14 @@ public class Resource {
 
     public String getAvailabilityStart() {
         return availabilityStart;
+    }
+
+    public String getBookingDate() {
+        return bookingDate;
+    }
+
+    public void setBookingDate(String bookingDate) {
+        this.bookingDate = bookingDate;
     }
 
     public void setAvailabilityStart(String availabilityStart) {

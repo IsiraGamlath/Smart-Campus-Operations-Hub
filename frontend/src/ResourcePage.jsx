@@ -26,6 +26,7 @@ import {
 import {
   createResourceApi,
   deleteResourceApi,
+  fetchResourcesByDateApi,
   fetchResourcesApi,
   fetchResourcesByLocationApi,
   fetchResourcesByMinimumCapacityApi,
@@ -203,6 +204,7 @@ function ResourcePage() {
       type: resource.type || '',
       capacity: resource.capacity ?? '',
       location: resource.location || '',
+      bookingDate: resource.bookingDate || '',
       availabilityStart: resource.availabilityStart || '',
       availabilityEnd: resource.availabilityEnd || '',
       status: resource.status || '',
@@ -355,6 +357,7 @@ function ResourcePage() {
     const name = filterData.name.trim();
     const type = filterData.type.trim();
     const location = filterData.location.trim();
+    const bookingDate = filterData.bookingDate.trim();
     const status = filterData.status.trim();
     const minCapacityValue = filterData.minCapacity.trim();
 
@@ -363,7 +366,7 @@ function ResourcePage() {
       return;
     }
 
-    const hasAnyFilter = name || type || location || status || minCapacityValue !== '';
+    const hasAnyFilter = name || type || location || bookingDate || status || minCapacityValue !== '';
 
     if (!hasAnyFilter) {
       await fetchResources();
@@ -386,6 +389,10 @@ function ResourcePage() {
 
       if (location) {
         resourceGroups.push(await fetchResourcesByLocationApi(location));
+      }
+
+      if (bookingDate) {
+        resourceGroups.push(await fetchResourcesByDateApi(bookingDate));
       }
 
       if (status) {

@@ -34,6 +34,10 @@ public class ResourceService {
         return resourceRepository.findByCapacityGreaterThanEqual(capacity);
     }
 
+    public List<Resource> getResourcesByBookingDate(String bookingDate) {
+        return resourceRepository.findByBookingDate(bookingDate);
+    }
+
     public List<Resource> searchResourcesByName(String name) {
         return resourceRepository.findByNameContainingIgnoreCase(name);
     }
@@ -66,6 +70,7 @@ public class ResourceService {
         updated.setType(resource.getType());
         updated.setCapacity(resource.getCapacity());
         updated.setLocation(resource.getLocation());
+        updated.setBookingDate(resource.getBookingDate());
         updated.setAvailabilityStart(resource.getAvailabilityStart());
         updated.setAvailabilityEnd(resource.getAvailabilityEnd());
         updated.setStatus(resource.getStatus());

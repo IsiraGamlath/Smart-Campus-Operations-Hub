@@ -53,6 +53,13 @@ export const fetchResourcesByMinimumCapacityApi = async (capacity) => {
   );
 };
 
+export const fetchResourcesByDateApi = async (bookingDate) => {
+  return fetchResourceList(
+    API_BASE_URL + '/date/' + encodeURIComponent(bookingDate),
+    'Failed to filter resources by date',
+  );
+};
+
 export const createResourceApi = async (payload) => {
   const response = await fetch(API_BASE_URL, {
     method: 'POST',

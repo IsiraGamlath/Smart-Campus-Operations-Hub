@@ -25,4 +25,6 @@ public interface ResourceRepository extends MongoRepository<Resource, String> {
     List<Resource> findByStatusIgnoreCaseAndCapacityGreaterThanEqual(String status, int capacity);
 
     List<Resource> findByCapacityGreaterThanEqual(int capacity);
+
+    List<Resource> findByBookingDate(String bookingDate);
 }

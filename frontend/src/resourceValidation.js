@@ -1,10 +1,35 @@
 import { parseTimeToMinutes } from './resourceHelpers';
 
+const parseDateInputValue = (dateValue) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
+
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsedDate = new Date(year, month - 1, day);
+
+  if (
+    parsedDate.getFullYear() !== year
+    || parsedDate.getMonth() !== month - 1
+    || parsedDate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  parsedDate.setHours(0, 0, 0, 0);
+  return parsedDate;
+};
+
 export const initialFormData = {
   name: '',
   type: '',
   capacity: '',
   location: '',
+  bookingDate: '',
   availabilityStart: '',
   availabilityEnd: '',
   status: '',
@@ -15,6 +40,7 @@ export const initialFilterData = {
   name: '',
   type: '',
   location: '',
+  bookingDate: '',
   status: '',
   minCapacity: '',
 };
@@ -47,6 +73,34 @@ export const validateField = (fieldName, fieldValue, currentData) => {
         return 'Please select a location';
       }
       return '';
+
+    case 'bookingDate': {
+      if (!trimmedValue) {
+        return 'Please select a date';
+      }
+
+      const selectedDate = parseDateInputValue(trimmedValue);
+
+      if (!selectedDate) {
+        return 'Please select a valid date';
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        return 'Date cannot be in the past';
+      }
+
+      const maxAllowedDate = new Date(today);
+      maxAllowedDate.setDate(maxAllowedDate.getDate() + 30);
+
+      if (selectedDate > maxAllowedDate) {
+        return 'Date cannot be more than 30 days from today';
+      }
+
+      return '';
+    }
 
     case 'availabilityStart':
       if (!trimmedValue) {

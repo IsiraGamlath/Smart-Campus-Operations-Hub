@@ -76,6 +76,18 @@ function ResourceFilter({
           </div>
 
           <div className="flex flex-col gap-1">
+            <label htmlFor="filterDate" className="text-sm font-medium text-slate-700">Filter by Date</label>
+            <input
+              id="filterDate"
+              name="bookingDate"
+              type="date"
+              value={filterData.bookingDate || ''}
+              onChange={onFilterInputChange}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
             <label htmlFor="filterMinCapacity" className="text-sm font-medium text-slate-700">Minimum Capacity</label>
             <input
               id="filterMinCapacity"

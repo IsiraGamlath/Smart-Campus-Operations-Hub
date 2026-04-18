@@ -95,6 +95,7 @@ function ResourceTable({
               <th className="px-4 py-3 text-left text-xs">Type</th>
               <th className="px-4 py-3 text-left text-xs">Capacity</th>
               <th className="px-4 py-3 text-left text-xs">Location</th>
+              <th className="px-4 py-3 text-left text-xs">Date</th>
               <th className="px-4 py-3 text-left text-xs">Availability Start</th>
               <th className="px-4 py-3 text-left text-xs">Availability End</th>
               <th className="px-4 py-3 text-left text-xs">Status</th>
@@ -122,6 +123,7 @@ function ResourceTable({
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.type || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.capacity ?? '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.location || '-'}</td>
+                  <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.bookingDate || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.availabilityStart || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">{resource.availabilityEnd || '-'}</td>
                   <td className="px-4 py-3 align-top text-sm text-gray-700">

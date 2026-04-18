@@ -70,6 +70,11 @@ public class ResourceController {
         return resourceService.getResourcesByMinimumCapacity(capacity);
     }
 
+    @GetMapping("/date/{bookingDate}")
+    public List<Resource> getResourcesByBookingDate(@PathVariable String bookingDate) {
+        return resourceService.getResourcesByBookingDate(bookingDate);
+    }
+
     @GetMapping("/search/name/{name}")
     public List<Resource> searchResourcesByName(@PathVariable String name) {
         return resourceService.searchResourcesByName(name);

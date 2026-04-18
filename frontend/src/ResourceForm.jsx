@@ -35,6 +35,19 @@ function ResourceForm({
 
   const getTextareaClass = (fieldName) => getInputClass(fieldName) + ' resize-none';
 
+  const formatDateInputValue = (dateValue) => {
+    const year = dateValue.getFullYear();
+    const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+    const day = String(dateValue.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+  };
+
+  const today = new Date();
+  const minBookingDate = formatDateInputValue(today);
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 30);
+  const maxBookingDate = formatDateInputValue(maxDate);
+
   return (
     <>
       <h2 className="text-lg font-semibold text-slate-900">
@@ -119,6 +132,25 @@ function ResourceForm({
             </select>
             {getFieldError('location') && (
               <p className="mt-1 text-xs text-red-600">{getFieldError('location')}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="bookingDate" className="text-sm font-medium text-slate-700">Date</label>
+            <input
+              id="bookingDate"
+              name="bookingDate"
+              type="date"
+              min={minBookingDate}
+              max={maxBookingDate}
+              value={formData.bookingDate || ''}
+              onChange={onInputChange}
+              onBlur={onFieldBlur}
+              className={getInputClass('bookingDate')}
+              aria-invalid={Boolean(getFieldError('bookingDate'))}
+            />
+            {getFieldError('bookingDate') && (
+              <p className="mt-1 text-xs text-red-600">{getFieldError('bookingDate')}</p>
             )}
           </div>
 
