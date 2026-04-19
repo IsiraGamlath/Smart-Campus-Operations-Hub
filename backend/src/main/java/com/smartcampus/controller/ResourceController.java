@@ -19,7 +19,7 @@ import com.smartcampus.model.Resource;
 import com.smartcampus.service.ResourceService;
 
 @RestController
-@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
 @RequestMapping("/api/resources")
 public class ResourceController {
 
