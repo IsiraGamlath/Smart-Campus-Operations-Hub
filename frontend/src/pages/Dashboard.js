@@ -4,14 +4,15 @@ import {
   Plus, 
   RefreshCcw,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  ArrowLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getTickets } from '../services/ticketService';
+import { getMyTickets, getTickets } from '../services/ticketService';
 import TicketCard from '../components/tickets/TicketCard';
 import { Button, Select } from '../components/ui';
 import { cn } from '../utils/cn';
-import Layout from '../components/layout/Layout';
+import UserNavbar from '../components/UserNavbar';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -25,51 +26,22 @@ const Dashboard = () => {
     search: ''
   });
   const [view, setView] = useState('grid'); // grid or list
+  const showAdminBack = user?.role === 'ADMIN';
 
   const fetchTickets = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const response = await getTickets(filters);
+      const response = user.role === 'ADMIN' ? await getTickets() : await getMyTickets();
+      console.log('Fetched tickets:', response.data);
       setTickets(response.data);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
-      toast.error('Failed to load tickets');
-      // Mock data for demo if API fails
-      setTickets([
-        {
-          id: 'TKT-001',
-          title: 'Broken AC in Lab 1',
-          category: 'Electrical',
-          status: 'OPEN',
-          priority: 'HIGH',
-          location: 'Computer Lab 1',
-          createdAt: new Date().toISOString(),
-          commentsCount: 2,
-          imagesCount: 3
-        },
-        {
-          id: 'TKT-002',
-          title: 'Whiteboard markers missing',
-          category: 'Furniture',
-          status: 'IN_PROGRESS',
-          priority: 'LOW',
-          location: 'Lecture Hall A',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          commentsCount: 1,
-          imagesCount: 0
-        },
-        {
-          id: 'TKT-003',
-          title: 'Projector flickering',
-          category: 'IT',
-          status: 'RESOLVED',
-          priority: 'MEDIUM',
-          location: 'Seminar Room',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-          commentsCount: 5,
-          imagesCount: 1
-        }
-      ]);
+      console.error('CRITICAL: Dashboard fetch failed:', error);
+      toast.error('Could not connect to database');
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -77,7 +49,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [user]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -95,8 +67,9 @@ const Dashboard = () => {
   });
 
   return (
-    <Layout user={user}>
-      <div className="space-y-8">
+    <div className="min-h-screen" style={{ background: '#fafafa' }}>
+      <UserNavbar />
+      <main className="mx-auto w-full max-w-7xl p-6 lg:p-10 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -104,12 +77,14 @@ const Dashboard = () => {
           <p className="text-slate-500 mt-1">Manage and track campus maintenance requests.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            to="/dashboard"
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Dashboard
-          </Link>
+          {showAdminBack && (
+            <Link to="/admin-dashboard">
+              <Button variant="ghost" className="gap-2">
+                <ArrowLeft size={16} />
+                Back to Admin
+              </Button>
+            </Link>
+          )}
           <Button variant="secondary" onClick={fetchTickets} className="gap-2">
             <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -221,8 +196,8 @@ const Dashboard = () => {
           )}
         </div>
       )}
-      </div>
-    </Layout>
+      </main>
+    </div>
   );
 };
 
