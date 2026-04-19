@@ -13,6 +13,21 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	@ExceptionHandler({ TicketNotFoundException.class, CommentNotFoundException.class })
+	public ResponseEntity<Map<String, Object>> handleTicketNotFound(RuntimeException ex) {
+		return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+	}
+
+	@ExceptionHandler(InvalidStatusTransitionException.class)
+	public ResponseEntity<Map<String, Object>> handleInvalidStatus(InvalidStatusTransitionException ex) {
+		return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(UnauthorizedAccessException.class)
+	public ResponseEntity<Map<String, Object>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+		return buildErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+	}
+
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
 		return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());

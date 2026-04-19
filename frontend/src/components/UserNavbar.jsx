@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Resources', to: '/resources' },
   { label: 'Bookings', to: '/bookings' },
+  { label: 'Tickets', to: '/tickets/create' },
 ];
 
 function UserNavbar() {
@@ -16,10 +17,6 @@ function UserNavbar() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
   const [notifications, setNotifications] = useState([]);
-
-  if (!user || user.role === 'ADMIN') {
-    return null;
-  }
 
   const handleUnauthorized = () => {
     setUser(null);
@@ -93,6 +90,23 @@ function UserNavbar() {
       setNotificationsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || user.role === 'ADMIN') {
+      return undefined;
+    }
+
+    loadNotifications();
+    const intervalId = setInterval(() => {
+      loadNotifications();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [user]);
+
+  if (!user || user.role === 'ADMIN') {
+    return null;
+  }
 
   const handleToggleNotifications = () => {
     const nextOpen = !notificationsOpen;

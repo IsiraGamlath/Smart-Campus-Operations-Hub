@@ -38,6 +38,12 @@ function Dashboard() {
               >
                 Resources
               </Link>
+              <Link
+                to="/tickets"
+                className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                My Tickets
+              </Link>
               {user?.role === 'ADMIN' && (
                 <Link
                   to="/admin-dashboard"
