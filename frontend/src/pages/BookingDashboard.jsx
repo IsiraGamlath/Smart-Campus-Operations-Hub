@@ -214,7 +214,7 @@ function BookingDashboard() {
                       {bookings.map((booking) => (
                         <tr key={booking.id} className="hover:bg-slate-50">
                           <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">
-                            {booking.resourceId}
+                            {booking.resourceName || booking.resourceId || "-"}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">
                             {booking.date}

@@ -75,8 +75,12 @@ function BookingTable({ bookings, onApprove, onReject, onCancel }) {
         <tbody className="divide-y divide-slate-100 bg-white">
           {bookings.map((booking) => (
             <tr key={booking.id} className="hover:bg-slate-50">
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">{booking.userId}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">{booking.resourceId}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">
+                {booking.userName || booking.userId || "-"}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">
+                {booking.resourceName || booking.resourceId || "-"}
+              </td>
               <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">{booking.date}</td>
               <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-800">
                 {booking.startTime} - {booking.endTime}

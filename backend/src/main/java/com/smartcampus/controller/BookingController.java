@@ -1,10 +1,13 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.BookingRequest;
+import com.smartcampus.dto.BookingResponse;
 import com.smartcampus.dto.RejectRequest;
 import com.smartcampus.model.Booking;
 import com.smartcampus.model.Role;
+import com.smartcampus.model.Resource;
 import com.smartcampus.model.User;
+import com.smartcampus.repository.ResourceRepository;
 import com.smartcampus.repository.UserRepository;
 import com.smartcampus.service.BookingService;
 import jakarta.validation.Valid;
@@ -23,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -32,10 +37,15 @@ public class BookingController {
 
 	private final BookingService bookingService;
 	private final UserRepository userRepository;
+	private final ResourceRepository resourceRepository;
 
-	public BookingController(BookingService bookingService, UserRepository userRepository) {
+	public BookingController(
+			BookingService bookingService,
+			UserRepository userRepository,
+			ResourceRepository resourceRepository) {
 		this.bookingService = bookingService;
 		this.userRepository = userRepository;
+		this.resourceRepository = resourceRepository;
 	}
 
 	@GetMapping
@@ -49,12 +59,16 @@ public class BookingController {
 			return forbiddenResponse();
 		}
 
-		return ResponseEntity.ok(bookingService.getAllBookings());
+		List<BookingResponse> responses = bookingService.getAllBookings()
+				.stream()
+				.map(this::toResponse)
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(responses);
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<Booking> getBookingById(@PathVariable String id) {
-		return ResponseEntity.ok(bookingService.getBookingById(id));
+	public ResponseEntity<BookingResponse> getBookingById(@PathVariable String id) {
+		return ResponseEntity.ok(toResponse(bookingService.getBookingById(id)));
 	}
 
 	@GetMapping("/me")
@@ -64,7 +78,11 @@ public class BookingController {
 			return unauthorizedResponse();
 		}
 
-		return ResponseEntity.ok(bookingService.getMyBookings(currentUser.get().getId()));
+		List<BookingResponse> responses = bookingService.getMyBookings(currentUser.get().getId())
+				.stream()
+				.map(this::toResponse)
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(responses);
 	}
 
 	@GetMapping("/user/{userId}")
@@ -78,7 +96,11 @@ public class BookingController {
 			return forbiddenResponse();
 		}
 
-		return ResponseEntity.ok(bookingService.getMyBookings(userId));
+		List<BookingResponse> responses = bookingService.getMyBookings(userId)
+				.stream()
+				.map(this::toResponse)
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(responses);
 	}
 
 	@PostMapping
@@ -89,22 +111,22 @@ public class BookingController {
 		}
 
 		Booking createdBooking = bookingService.createBooking(request, currentUser.get().getId());
-		return ResponseEntity.status(HttpStatus.CREATED).body(createdBooking);
+		return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(createdBooking));
 	}
 
 	@PutMapping("/{id}/approve")
-	public ResponseEntity<Booking> approveBooking(@PathVariable String id) {
-		return ResponseEntity.ok(bookingService.approveBooking(id));
+	public ResponseEntity<BookingResponse> approveBooking(@PathVariable String id) {
+		return ResponseEntity.ok(toResponse(bookingService.approveBooking(id)));
 	}
 
 	@PutMapping("/{id}/reject")
-	public ResponseEntity<Booking> rejectBooking(@PathVariable String id, @Valid @RequestBody RejectRequest request) {
-		return ResponseEntity.ok(bookingService.rejectBooking(id, request));
+	public ResponseEntity<BookingResponse> rejectBooking(@PathVariable String id, @Valid @RequestBody RejectRequest request) {
+		return ResponseEntity.ok(toResponse(bookingService.rejectBooking(id, request)));
 	}
 
 	@PutMapping("/{id}/cancel")
-	public ResponseEntity<Booking> cancelBooking(@PathVariable String id) {
-		return ResponseEntity.ok(bookingService.cancelBooking(id));
+	public ResponseEntity<BookingResponse> cancelBooking(@PathVariable String id) {
+		return ResponseEntity.ok(toResponse(bookingService.cancelBooking(id)));
 	}
 
 	@DeleteMapping("/{id}")
@@ -155,5 +177,23 @@ public class BookingController {
 	private ResponseEntity<Map<String, String>> forbiddenResponse() {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.body(Map.of("message", "Access denied"));
+	}
+
+	private BookingResponse toResponse(Booking booking) {
+		String userName = booking.getUserId();
+		if (booking.getUserId() != null && !booking.getUserId().isBlank()) {
+			userName = userRepository.findById(booking.getUserId())
+					.map(User::getName)
+					.orElse(booking.getUserId());
+		}
+
+		String resourceName = booking.getResourceId();
+		if (booking.getResourceId() != null && !booking.getResourceId().isBlank()) {
+			resourceName = resourceRepository.findById(booking.getResourceId())
+					.map(Resource::getName)
+					.orElse(booking.getResourceId());
+		}
+
+		return BookingResponse.from(booking, userName, resourceName);
 	}
 }
