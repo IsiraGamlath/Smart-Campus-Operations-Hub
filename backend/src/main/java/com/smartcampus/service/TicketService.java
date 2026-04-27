@@ -19,6 +19,7 @@ import com.smartcampus.model.Comment;
 import com.smartcampus.model.Ticket;
 import com.smartcampus.model.TicketStatus;
 import com.smartcampus.repository.TicketRepository;
+import com.smartcampus.repository.UserRepository;
 import com.smartcampus.service.NotificationsService;
 
 @Service
@@ -31,6 +32,9 @@ public class TicketService {
 
     @Autowired
     private NotificationsService notificationsService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     //  CREATE
     public Ticket createTicketWithImage(Ticket ticket, MultipartFile imageFile) throws IOException {
@@ -46,7 +50,9 @@ public class TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setUpdatedAt(LocalDateTime.now());
-        return ticketRepository.save(ticket);
+        Ticket savedTicket = ticketRepository.save(ticket);
+        notifyAdminsNewTicket(savedTicket);
+        return savedTicket;
     }
 
     //  GET ALL
@@ -264,5 +270,46 @@ public class TicketService {
         String label = (title == null || title.isBlank()) ? "your ticket" : "ticket \"" + title + "\"";
         String message = "New comment on " + label;
         notificationsService.createNotification(ownerId, message);
+    }
+
+    private void notifyAdminsNewTicket(Ticket ticket) {
+        String createdBy = ticket.getCreatedBy();
+        String actor = resolveUserLabel(createdBy);
+
+        String title = ticket.getTitle();
+        String label = (title == null || title.isBlank()) ? "a new ticket" : "ticket \"" + title + "\"";
+
+        String location = ticket.getLocation();
+        String locationSuffix = (location == null || location.isBlank()) ? "" : " at " + location;
+
+        notificationsService.createNotificationForAdmins(
+                "New ticket raised by " + actor + ": " + label + locationSuffix);
+    }
+
+    private String resolveUserLabel(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return "an unknown user";
+        }
+
+        return userRepository.findById(userId)
+                .map(user -> {
+                    String name = user.getName();
+                    String email = user.getEmail();
+
+                    if (name != null && !name.isBlank() && email != null && !email.isBlank()) {
+                        return name + " (" + email + ")";
+                    }
+
+                    if (email != null && !email.isBlank()) {
+                        return email;
+                    }
+
+                    if (name != null && !name.isBlank()) {
+                        return name;
+                    }
+
+                    return "user " + userId;
+                })
+                .orElse("user " + userId);
     }
 }

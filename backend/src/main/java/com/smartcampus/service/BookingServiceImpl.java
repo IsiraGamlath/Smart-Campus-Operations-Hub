@@ -9,6 +9,7 @@ import com.smartcampus.model.BookingStatus;
 import com.smartcampus.model.Resource;
 import com.smartcampus.repository.BookingRepository;
 import com.smartcampus.repository.ResourceRepository;
+import com.smartcampus.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,14 +24,17 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
+    private final UserRepository userRepository;
     private final NotificationsService notificationsService;
 
     public BookingServiceImpl(
             BookingRepository bookingRepository,
             ResourceRepository resourceRepository,
+            UserRepository userRepository,
             NotificationsService notificationsService) {
         this.bookingRepository = bookingRepository;
         this.resourceRepository = resourceRepository;
+        this.userRepository = userRepository;
         this.notificationsService = notificationsService;
     }
 
@@ -81,7 +85,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setCreatedAt(now);
         booking.setUpdatedAt(now);
 
-        return bookingRepository.save(booking);
+        Booking createdBooking = bookingRepository.save(booking);
+        String requester = resolveUserLabel(createdBooking.getUserId());
+
+        notificationsService.createNotificationForAdmins(
+            "New booking request from " + requester
+                + ": " + formatBookingSummary(createdBooking));
+
+        return createdBooking;
     }
 
     @Override
@@ -286,5 +297,32 @@ public class BookingServiceImpl implements BookingService {
             return "Booking rejected: " + summary;
         }
         return "Booking rejected: " + summary + ". Reason: " + reason.trim();
+    }
+
+    private String resolveUserLabel(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return "an unknown user";
+        }
+
+        return userRepository.findById(userId)
+                .map(user -> {
+                    String name = user.getName();
+                    String email = user.getEmail();
+
+                    if (name != null && !name.isBlank() && email != null && !email.isBlank()) {
+                        return name + " (" + email + ")";
+                    }
+
+                    if (email != null && !email.isBlank()) {
+                        return email;
+                    }
+
+                    if (name != null && !name.isBlank()) {
+                        return name;
+                    }
+
+                    return "user " + userId;
+                })
+                .orElse("user " + userId);
     }
 }
